@@ -1,0 +1,13 @@
+{
+    "name": "codex/the-codex",
+    "description": "The Codex — a collaborative D&D session-notes wiki.",
+    "type": "project",
+    "require": {
+        "php": ">=8.1",
+        "ext-pdo": "*",
+        "ezyang/htmlpurifier": "^4.17"
+    },
+    "config": {
+        "optimize-autoloader": true
+    }
+}

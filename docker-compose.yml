@@ -1,0 +1,44 @@
+# The Codex — app + bundled MySQL.
+#
+# Local dev / first run:   docker compose up --build -d
+# Update from Docker Hub:  docker compose pull && docker compose up -d
+#
+# Set DOCKER_IMAGE in .env to your Docker Hub repo (e.g. youruser/the-codex:latest)
+# to `pull` published images instead of building locally.
+
+services:
+  app:
+    image: ${DOCKER_IMAGE:-the-codex:local}
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-codex}
+      DB_USER: ${DB_USER:-codex}
+      DB_PASS: ${DB_PASS:-codex}
+      APP_SECRET: ${APP_SECRET:-change-me}
+    ports:
+      - "${APP_PORT:-8080}:80"
+
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-codex}
+      MYSQL_USER: ${DB_USER:-codex}
+      MYSQL_PASSWORD: ${DB_PASS:-codex}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+    volumes:
+      - codex_db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  codex_db:
