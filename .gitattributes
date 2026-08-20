@@ -1,0 +1,9 @@
+# Force LF for all text files so shell scripts / PHP run correctly inside the
+# Linux Docker image, regardless of the host OS (Windows checkouts included).
+* text=auto eol=lf
+
+# Binary-ish assets: never normalize.
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
