@@ -48,10 +48,14 @@ and MySQL data persists in the `codex_db` volume across restarts and image updat
 ## Deploying + updating (production)
 
 1. Push this repo to GitHub.
-2. Add repository **secrets** `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`, and a
-   repository **variable** `DOCKERHUB_REPO` (e.g. `youruser/the-codex`).
-3. Push to `main` (or tag `v1.0.0`) — GitHub Actions builds and pushes the image.
-4. On your server, set `DOCKER_IMAGE=youruser/the-codex:latest` in `.env`, then:
+2. Add two repository **secrets** (Settings → Secrets and variables → Actions →
+   *Secrets*, not Variables): `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`. The token
+   must have **Read & Write** permissions (a read-only token fails with
+   `insufficient_scope`).
+3. The image name is set in `.github/workflows/docker.yml` via `IMAGE_NAME`
+   (default `robzwet/the-codex`) — change it if you fork/rename.
+4. Push to `main` (or tag `v1.0.0`) — GitHub Actions builds and pushes the image.
+5. On your server, set `DOCKER_IMAGE=robzwet/the-codex:latest` in `.env`, then:
 
 ```bash
 docker compose pull && docker compose up -d

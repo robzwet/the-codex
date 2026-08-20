@@ -1,16 +1,20 @@
 name: Build and push Docker image
 
 # Builds the app image and pushes it to Docker Hub on every push to main
-# and on version tags (v1.2.3). Requires two repository secrets:
+# and on version tags (v1.2.3). Requires two repository secrets
+# (Settings > Secrets and variables > Actions > Secrets):
 #   DOCKERHUB_USERNAME  - your Docker Hub username
-#   DOCKERHUB_TOKEN     - a Docker Hub access token
-# And one repository variable (Settings > Secrets and variables > Actions > Variables):
-#   DOCKERHUB_REPO      - e.g. youruser/the-codex
+#   DOCKERHUB_TOKEN     - a Docker Hub access token with READ & WRITE permissions
+#
+# The image name is set below via IMAGE_NAME — change it if you fork/rename.
 
 on:
   push:
     branches: [main]
     tags: ['v*']
+
+env:
+  IMAGE_NAME: robzwet/the-codex
 
 jobs:
   build-and-push:
@@ -32,7 +36,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ vars.DOCKERHUB_REPO }}
+          images: ${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=tag
