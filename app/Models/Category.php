@@ -22,6 +22,7 @@ final class Category
         ['name' => 'Organizations',      'icon' => '⚜️'],
         ['name' => 'Places',             'icon' => '🏰'],
         ['name' => 'Points of Interest', 'icon' => '📍'],
+        ['name' => 'Quests',             'icon' => '📌'],
         ['name' => 'Items',              'icon' => '⚔️'],
     ];
 

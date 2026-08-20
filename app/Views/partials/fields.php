@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Campaign;
 use App\Models\Template;
 
 /**
@@ -35,6 +36,16 @@ foreach ($fields as $f):
                 <option value="">— none —</option>
                 <?php foreach ($f['options'] as $opt): ?>
                     <option value="<?= e($opt) ?>" <?= $val === $opt ? 'selected' : '' ?>><?= e($opt) ?></option>
+                <?php endforeach; ?>
+            </select>
+
+        <?php elseif ($f['type'] === 'user'): ?>
+            <select id="<?= e($id) ?>" name="field[<?= e($key) ?>]">
+                <option value="">— nobody —</option>
+                <?php foreach (Campaign::members($campaignId) as $mem): ?>
+                    <option value="<?= (int) $mem['id'] ?>" <?= $val === (string) $mem['id'] ? 'selected' : '' ?>>
+                        <?= e($mem['username']) ?><?= $mem['role'] === 'gm' ? ' (GM)' : '' ?>
+                    </option>
                 <?php endforeach; ?>
             </select>
 

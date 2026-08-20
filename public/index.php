@@ -10,6 +10,7 @@ use App\Controllers\CampaignController;
 use App\Controllers\CategoryController;
 use App\Controllers\FieldController;
 use App\Controllers\PageController;
+use App\Controllers\TagController;
 use App\Lib\Auth;
 use App\Lib\Router;
 
@@ -32,6 +33,8 @@ $router->get('/dashboard', [CampaignController::class, 'dashboard']);
 $router->post('/campaigns', [CampaignController::class, 'create']);
 $router->post('/campaigns/join', [CampaignController::class, 'join']);
 $router->get('/campaign/{id}', [CampaignController::class, 'show']);
+$router->get('/campaign/{id}/dashboard', [CampaignController::class, 'dashboardView']);
+$router->get('/campaign/{id}/tags', [TagController::class, 'index']);
 $router->post('/campaign/{id}/seed-templates', [CampaignController::class, 'seedTemplates']);
 
 // --- Categories ---

@@ -14,7 +14,9 @@ use App\Lib\View;
 use App\Lib\WikiLinks;
 use App\Models\Category;
 use App\Models\Page;
+use App\Models\Tag;
 use App\Models\Template;
+use App\Models\User;
 
 final class PageController
 {
@@ -41,10 +43,17 @@ final class PageController
         $used = [];
         foreach ($fields as $f) {
             $val = $metaMap[$f['field_key']] ?? '';
-            if ($val !== '') {
-                $display[] = ['label' => $f['label'], 'type' => $f['type'], 'value' => $val];
-                $used[$f['field_key']] = true;
+            if ($val === '') {
+                continue;
             }
+            $type = $f['type'];
+            if ($type === 'user') {
+                // Stored value is a user id; show the username.
+                $val = User::name((int) $val) ?? $val;
+                $type = 'text';
+            }
+            $display[] = ['label' => $f['label'], 'type' => $type, 'value' => $val];
+            $used[$f['field_key']] = true;
         }
         $leftover = [];
         foreach ($metaRows as $m) {
@@ -60,8 +69,10 @@ final class PageController
             'bodyHtml'  => WikiLinks::render($page['body_html'] ?? '', $cid),
             'display'   => $display,
             'leftover'  => $leftover,
+            'tags'      => Tag::forPage((int) $page['id']),
             'authors'   => Page::authors((int) $page['id']),
-            'isSession' => Template::isSessionCategory($cid, $page['category_id'] !== null ? (int) $page['category_id'] : null),
+            'isSession' => $isSession = Template::isSessionCategory($cid, $page['category_id'] !== null ? (int) $page['category_id'] : null),
+            'neighbors' => $isSession ? Page::sessionNeighbors($cid, (int) $page['id']) : ['prev' => null, 'next' => null],
             'backlinks' => Page::backlinks((int) $page['id']),
         ], 'app_layout');
     }
@@ -77,7 +88,7 @@ final class PageController
             'body_html'   => '',
             'category_id' => $categoryId,
             'slug'        => null,
-        ], [], $categoryId);
+        ], [], $categoryId, '');
     }
 
     public static function store(array $params): void
@@ -96,6 +107,7 @@ final class PageController
             (int) Auth::id(),
             self::collectMeta($cid, $categoryId)
         );
+        Tag::setForPage($cid, $id, $_POST['tags'] ?? '');
 
         $page = Page::findById($id);
         Flash::set('success', 'Page created.');
@@ -122,7 +134,8 @@ final class PageController
             'edit',
             $page,
             $values,
-            $page['category_id'] !== null ? (int) $page['category_id'] : null
+            $page['category_id'] !== null ? (int) $page['category_id'] : null,
+            implode(', ', Tag::forPage((int) $page['id']))
         );
     }
 
@@ -148,6 +161,7 @@ final class PageController
             (int) Auth::id(),
             self::collectMeta($cid, $categoryId)
         );
+        Tag::setForPage($cid, (int) $page['id'], $_POST['tags'] ?? '');
 
         $fresh = Page::findById((int) $page['id']);
         Flash::set('success', 'Saved.');
@@ -218,7 +232,7 @@ final class PageController
 
     // --- helpers --------------------------------------------------------------
 
-    private static function renderForm(array $campaign, string $mode, array $page, array $values, ?int $categoryId): void
+    private static function renderForm(array $campaign, string $mode, array $page, array $values, ?int $categoryId, string $tags): void
     {
         $cid = (int) $campaign['id'];
         View::render('pages/form', [
@@ -230,6 +244,8 @@ final class PageController
             'fields'     => Template::fieldsFor($cid, $categoryId),
             'values'     => $values,
             'campaignId' => $cid,
+            'tags'       => $tags,
+            'allTags'    => array_column(Tag::allForCampaign($cid), 'tag'),
         ], 'app_layout');
     }
 

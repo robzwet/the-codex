@@ -17,7 +17,7 @@ use App\Lib\Slug;
  */
 final class Template
 {
-    public const TYPES = ['text', 'textarea', 'select', 'suggest', 'image', 'date', 'multi'];
+    public const TYPES = ['text', 'textarea', 'select', 'suggest', 'image', 'date', 'multi', 'user'];
 
     /**
      * Default field sets keyed by (lower-cased) category name, seeded on campaign
@@ -26,7 +26,8 @@ final class Template
     private const DEFAULTS = [
         'party' => [
             ['Image', 'image'],
-            ['Player', 'text'],
+            ['Nickname', 'text'],
+            ['Player', 'user'],
             ['Class', 'suggest', ['Barbarian','Bard','Cleric','Druid','Fighter','Monk','Paladin','Ranger','Rogue','Sorcerer','Warlock','Wizard','Artificer']],
             ['Race', 'suggest', ['Human','Elf','Half-Elf','Dwarf','Halfling','Gnome','Half-Orc','Tiefling','Dragonborn']],
             ['Level', 'text'],
@@ -34,13 +35,21 @@ final class Template
         ],
         'npcs' => [
             ['Image', 'image'],
+            ['Nickname', 'text'],
             ['Gender', 'select', ['Male','Female','Non-binary','Unknown']],
             ['Race', 'suggest', ['Human','Elf','Half-Elf','Dwarf','Halfling','Gnome','Half-Orc','Tiefling','Dragonborn']],
             ['Age range', 'select', ['Child','Adolescent','Young adult','Adult','Middle-aged','Elderly','Ancient','Unknown']],
-            ['Status', 'select', ['Alive','Dead','Missing','Unknown']],
+            ['Status', 'select', ['Alive','Dead','Undead','Missing','Unknown']],
             ['Occupation', 'text'],
             ['Location', 'suggest'],
             ['Faction', 'suggest'],
+        ],
+        'quests' => [
+            ['Quest giver', 'suggest'],
+            ['Reward', 'text'],
+            ['Status', 'select', ['Active','Open thread','Completed']],
+            ['Started (session)', 'text'],
+            ['Completed (session)', 'text'],
         ],
         'organizations' => [
             ['Image', 'image'],
