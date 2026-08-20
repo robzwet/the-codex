@@ -1,32 +1,28 @@
-/* The Codex — editor, [[wikilink]] autocomplete, and infobox meta rows. */
+/* The Codex — page editor, [[wikilink]] autocomplete, template fields. */
 (function () {
     'use strict';
 
-    /* ---------- Infobox meta rows ---------- */
-    const metaRows = document.getElementById('meta-rows');
-    const addMeta = document.getElementById('add-meta');
-    if (metaRows && addMeta) {
-        addMeta.addEventListener('click', function () {
-            const row = document.createElement('div');
-            row.className = 'meta-row';
-            row.innerHTML =
-                '<input type="text" name="meta_key[]" placeholder="Field">' +
-                '<input type="text" name="meta_value[]" placeholder="Value">' +
-                '<button type="button" class="btn btn-sm meta-remove">✕</button>';
-            metaRows.appendChild(row);
+    /* ---------- Field-template editor (per-category "Manage fields") ---------- */
+    const fieldRows = document.getElementById('field-rows');
+    const addField = document.getElementById('add-field');
+    const rowTemplate = document.getElementById('field-row-template');
+    if (fieldRows && addField && rowTemplate) {
+        addField.addEventListener('click', function () {
+            fieldRows.appendChild(rowTemplate.content.cloneNode(true));
         });
-        metaRows.addEventListener('click', function (e) {
-            if (e.target.classList.contains('meta-remove')) {
-                e.target.closest('.meta-row').remove();
+        fieldRows.addEventListener('click', function (e) {
+            if (e.target.classList.contains('field-remove')) {
+                e.target.closest('.field-edit-row').remove();
             }
         });
     }
 
-    /* ---------- Rich-text editor ---------- */
+    /* ---------- Page form (editor + fields) ---------- */
     const editor = document.getElementById('editor');
     const form = document.getElementById('page-form');
-    const toolbar = document.getElementById('toolbar');
     if (!editor || !form) return;
+
+    const toolbar = document.getElementById('toolbar');
 
     // New lines become <p> (allowed by the sanitizer) instead of <div> (stripped).
     try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch (e) {}
@@ -42,8 +38,7 @@
             } else if (btn.dataset.block) {
                 document.execCommand('formatBlock', false, btn.dataset.block);
             } else if (btn.hasAttribute('data-wikilink')) {
-                insertText('[[]]');
-                // place caret between the brackets
+                document.execCommand('insertText', false, '[[]]');
                 const sel = window.getSelection();
                 if (sel.rangeCount) {
                     const r = sel.getRangeAt(0);
@@ -57,21 +52,44 @@
         });
     }
 
-    // Sync the editor HTML into the hidden field on submit.
+    // Sync editor HTML into the hidden field on submit.
     form.addEventListener('submit', function () {
         document.getElementById('body_html').value = editor.innerHTML;
     });
 
-    function insertText(text) {
-        document.execCommand('insertText', false, text);
+    /* ---------- Reload template fields when the category changes ---------- */
+    const catSelect = document.getElementById('category-select');
+    const fieldsSection = document.getElementById('fields-section');
+    const manageLink = document.getElementById('manage-fields-link');
+    const fieldsUrl = form.dataset.fieldsUrl;
+    const pageId = form.dataset.pageId;
+    const cid = fieldsUrl ? fieldsUrl.match(/campaign\/(\d+)/)[1] : null;
+
+    if (catSelect && fieldsSection && fieldsUrl) {
+        catSelect.addEventListener('change', function () {
+            const category = catSelect.value;
+            let url = fieldsUrl + '?category=' + encodeURIComponent(category);
+            if (pageId) url += '&page=' + encodeURIComponent(pageId);
+            fieldsSection.innerHTML = '<p class="muted">Loading…</p>';
+            fetch(url).then(function (r) { return r.text(); }).then(function (html) {
+                fieldsSection.innerHTML = html;
+            }).catch(function () {
+                fieldsSection.innerHTML = '<p class="muted">Could not load fields.</p>';
+            });
+            if (manageLink) {
+                if (category) {
+                    manageLink.href = '/campaign/' + cid + '/category/' + category + '/fields';
+                    manageLink.removeAttribute('hidden');
+                } else {
+                    manageLink.setAttribute('hidden', '');
+                }
+            }
+        });
     }
 
     /* ---------- [[ ]] autocomplete ---------- */
     const searchUrl = form.dataset.searchUrl;
-    let box = null;
-    let items = [];
-    let active = -1;
-    let debounce = null;
+    let box = null, items = [], active = -1, debounce = null;
 
     editor.addEventListener('input', function () {
         const ctx = openTokenBeforeCaret();
@@ -92,7 +110,6 @@
         if (box && !box.contains(e.target)) closeBox();
     });
 
-    // Find an unclosed [[query at the caret. Returns {node, start, offset, query} or null.
     function openTokenBeforeCaret() {
         const sel = window.getSelection();
         if (!sel.rangeCount) return null;
@@ -162,7 +179,6 @@
         const text = ctx.node.textContent;
         const insert = '[[' + item.title + ']]';
         ctx.node.textContent = text.slice(0, ctx.start) + insert + text.slice(ctx.offset);
-        // caret just after the inserted token
         const caret = ctx.start + insert.length;
         const sel = window.getSelection();
         const range = document.createRange();

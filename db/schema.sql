@@ -88,6 +88,22 @@ CREATE TABLE IF NOT EXISTS links (
     CONSTRAINT fk_link_target   FOREIGN KEY (target_page_id) REFERENCES pages(id)     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Typed field templates attached to a category (NPC, Place, Item, ...).
+-- A page inherits its category's fields, falling back to the parent category.
+CREATE TABLE IF NOT EXISTS category_fields (
+    id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    campaign_id INT UNSIGNED NOT NULL,
+    category_id INT UNSIGNED NOT NULL,
+    label       VARCHAR(100) NOT NULL,
+    field_key   VARCHAR(100) NOT NULL,
+    type        VARCHAR(20)  NOT NULL DEFAULT 'text',
+    options     TEXT         NULL,      -- JSON array of choices (select / suggested)
+    sort_order  INT          NOT NULL DEFAULT 0,
+    KEY idx_field_category (category_id),
+    CONSTRAINT fk_field_campaign FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE,
+    CONSTRAINT fk_field_category FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS page_revisions (
     id        INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     page_id   INT UNSIGNED NOT NULL,

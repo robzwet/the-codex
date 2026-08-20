@@ -24,4 +24,13 @@ final class View
             echo $content;
         }
     }
+
+    /** Render a template to a string (no layout) — for AJAX partials. */
+    public static function capture(string $template, array $data = []): string
+    {
+        extract($data, EXTR_SKIP);
+        ob_start();
+        require __DIR__ . '/../Views/' . $template . '.php';
+        return (string) ob_get_clean();
+    }
 }

@@ -1,5 +1,8 @@
 <?php
-/** @var array $campaign @var array $tree @var array $members @var bool $hasPages @var ?array $firstPage */
+
+use App\Lib\Csrf;
+
+/** @var array $campaign @var array $tree @var array $members @var bool $hasPages @var ?array $firstPage @var bool $hasFields */
 ?>
 <div class="layout">
     <?php require __DIR__ . '/../partials/sidebar.php'; ?>
@@ -7,6 +10,16 @@
     <main class="main">
         <h1 class="page-title"><?= e($campaign['name']) ?></h1>
         <div class="page-title-rule">&#10022; &#10022; &#10022;</div>
+
+        <?php if (empty($hasFields)): ?>
+            <div class="flash flash-success" style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+                <span>Set up structured fields (NPC race/gender/image, place type, item rarity…) for this campaign's categories.</span>
+                <form method="post" action="/campaign/<?= (int) $campaign['id'] ?>/seed-templates">
+                    <?= Csrf::field() ?>
+                    <button class="btn btn-sm btn-primary" type="submit">Set up field templates</button>
+                </form>
+            </div>
+        <?php endif; ?>
 
         <?php if (!empty($campaign['description'])): ?>
             <p class="muted" style="text-align:center;"><?= e($campaign['description']) ?></p>

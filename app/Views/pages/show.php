@@ -2,9 +2,21 @@
 
 use App\Lib\Csrf;
 
-/** @var array $campaign @var array $tree @var array $page @var string $bodyHtml @var array $meta @var array $backlinks */
+/** @var array $campaign @var array $tree @var array $page @var string $bodyHtml
+ * @var array $display @var array $leftover @var array $authors @var bool $isSession @var array $backlinks */
 $activeSlug = $page['slug'];
 $cid = (int) $campaign['id'];
+
+// Pull out an image field (if any) to show at the top of the infobox.
+$image = null;
+$rows = [];
+foreach ($display as $d) {
+    if ($d['type'] === 'image' && $image === null) {
+        $image = $d['value'];
+    } else {
+        $rows[] = $d;
+    }
+}
 ?>
 <div class="layout">
     <?php require __DIR__ . '/../partials/sidebar.php'; ?>
@@ -22,12 +34,30 @@ $cid = (int) $campaign['id'];
 
         <h1 class="page-title"><?= e($page['title']) ?></h1>
         <div class="page-title-rule">&#10022; &#10022; &#10022;</div>
+        <p class="byline muted">
+            <?php if (!empty($authors['created_by'])): ?>Written by <strong><?= e($authors['created_by']) ?></strong><?php endif; ?>
+            <?php if (!empty($authors['updated_by']) && $authors['updated_by'] !== $authors['created_by']): ?>
+                · last edited by <strong><?= e($authors['updated_by']) ?></strong><?php endif; ?>
+        </p>
 
-        <?php if (!empty($meta)): ?>
+        <?php if ($image || $rows || $leftover): ?>
             <div class="infobox">
-                <div class="infobox-header"><?= $page['kind'] === 'note' ? 'Session' : 'Details' ?></div>
-                <?php foreach ($meta as $m): ?>
-                    <div class="infobox-row"><span class="k"><?= e($m['meta_key']) ?>:</span> <?= e($m['meta_value']) ?></div>
+                <div class="infobox-header"><?= $isSession ? 'Session' : 'Details' ?></div>
+                <?php if ($image): ?>
+                    <div class="infobox-image"><img src="<?= e($image) ?>" alt="<?= e($page['title']) ?>"></div>
+                <?php endif; ?>
+                <?php foreach ($rows as $r): ?>
+                    <div class="infobox-row">
+                        <span class="k"><?= e($r['label']) ?>:</span>
+                        <?php if ($r['type'] === 'multi'): ?>
+                            <?= e(implode(', ', array_map('trim', explode(',', $r['value'])))) ?>
+                        <?php else: ?>
+                            <?= e($r['value']) ?>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+                <?php foreach ($leftover as $r): ?>
+                    <div class="infobox-row"><span class="k"><?= e($r['label']) ?>:</span> <?= e($r['value']) ?></div>
                 <?php endforeach; ?>
             </div>
         <?php endif; ?>

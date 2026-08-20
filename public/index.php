@@ -8,6 +8,7 @@ use App\Controllers\ApiController;
 use App\Controllers\AuthController;
 use App\Controllers\CampaignController;
 use App\Controllers\CategoryController;
+use App\Controllers\FieldController;
 use App\Controllers\PageController;
 use App\Lib\Auth;
 use App\Lib\Router;
@@ -31,11 +32,17 @@ $router->get('/dashboard', [CampaignController::class, 'dashboard']);
 $router->post('/campaigns', [CampaignController::class, 'create']);
 $router->post('/campaigns/join', [CampaignController::class, 'join']);
 $router->get('/campaign/{id}', [CampaignController::class, 'show']);
+$router->post('/campaign/{id}/seed-templates', [CampaignController::class, 'seedTemplates']);
 
 // --- Categories ---
 $router->post('/campaign/{id}/categories', [CategoryController::class, 'store']);
 $router->post('/campaign/{id}/categories/{cid}/rename', [CategoryController::class, 'rename']);
 $router->post('/campaign/{id}/categories/{cid}/delete', [CategoryController::class, 'delete']);
+
+// --- Template fields (per category) ---
+$router->get('/campaign/{id}/category/{cid}/fields', [FieldController::class, 'edit']);
+$router->post('/campaign/{id}/category/{cid}/fields', [FieldController::class, 'save']);
+$router->post('/campaign/{id}/category/{cid}/fields/defaults', [FieldController::class, 'loadDefaults']);
 
 // --- Pages ---
 $router->get('/campaign/{id}/new', [PageController::class, 'createForm']);
@@ -49,6 +56,7 @@ $router->post('/campaign/{id}/page/{slug}/restore', [PageController::class, 'res
 
 // --- API ---
 $router->get('/api/campaign/{id}/search', [ApiController::class, 'search']);
+$router->get('/api/campaign/{id}/fields', [ApiController::class, 'fields']);
 
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $router->dispatch($_SERVER['REQUEST_METHOD'] ?? 'GET', $path);

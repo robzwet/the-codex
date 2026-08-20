@@ -26,6 +26,7 @@ final class Campaign
         );
 
         Category::seedDefaults($id);
+        Template::seedCampaign($id);
         return $id;
     }
 

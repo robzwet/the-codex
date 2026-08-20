@@ -230,6 +230,24 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
 .rev-list li { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
 .rev-list .who { color: var(--text-muted); font-size: 13px; }
 
+/* --- Template fields (page form) --- */
+.template-fields { border: 1px solid var(--border); border-radius: var(--radius); padding: 6px 16px 16px; margin-top: 8px; }
+.template-fields legend { color: var(--gold-soft); font-family: var(--serif); font-variant: small-caps; padding: 0 8px; }
+.field-row { margin-bottom: 10px; }
+.field-row label { margin: 0 0 4px; color: var(--gold); }
+.field-row label.inline { display: inline; color: var(--text-muted); font-size: 13px; }
+.field-image-preview img { max-width: 220px; max-height: 220px; border: 1px solid var(--border); border-radius: var(--radius); display: block; margin-bottom: 6px; }
+
+/* --- Field editor (Manage fields) --- */
+.field-edit-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+.field-edit-row input[name="label[]"] { flex: 1; }
+.field-edit-row input[name="options[]"] { flex: 2; }
+.field-edit-row select { width: 120px; flex-shrink: 0; }
+
+/* --- Infobox image + byline --- */
+.infobox-image img { max-width: 100%; border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 10px; }
+.byline { text-align: center; font-size: 13px; margin: -14px 0 20px; }
+
 .muted { color: var(--text-muted); }
 .invite-code { font-family: monospace; background: var(--bg-elevated); padding: 2px 8px; border-radius: 5px; color: var(--gold); letter-spacing: 1px; }
 .empty-state { text-align: center; color: var(--text-muted); margin-top: 12vh; }

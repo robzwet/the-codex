@@ -1,0 +1,221 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Models;
+
+use App\Lib\Db;
+use App\Lib\Slug;
+
+/**
+ * Typed field templates per category. A page shows the fields of its category,
+ * inheriting from the parent category when the sub-category defines none.
+ *
+ * Field types: text, textarea, select (fixed dropdown), suggest (dropdown that
+ * learns previously-used values), image (upload), date, multi (comma-separated).
+ * Values are stored in page_meta keyed by field_key.
+ */
+final class Template
+{
+    public const TYPES = ['text', 'textarea', 'select', 'suggest', 'image', 'date', 'multi'];
+
+    /**
+     * Default field sets keyed by (lower-cased) category name, seeded on campaign
+     * creation and loadable on demand. options => choices for select/suggest.
+     */
+    private const DEFAULTS = [
+        'party' => [
+            ['Image', 'image'],
+            ['Player', 'text'],
+            ['Class', 'suggest', ['Barbarian','Bard','Cleric','Druid','Fighter','Monk','Paladin','Ranger','Rogue','Sorcerer','Warlock','Wizard','Artificer']],
+            ['Race', 'suggest', ['Human','Elf','Half-Elf','Dwarf','Halfling','Gnome','Half-Orc','Tiefling','Dragonborn']],
+            ['Level', 'text'],
+            ['Status', 'select', ['Alive','Dead','Missing','Unknown']],
+        ],
+        'npcs' => [
+            ['Image', 'image'],
+            ['Gender', 'select', ['Male','Female','Non-binary','Unknown']],
+            ['Race', 'suggest', ['Human','Elf','Half-Elf','Dwarf','Halfling','Gnome','Half-Orc','Tiefling','Dragonborn']],
+            ['Age range', 'select', ['Child','Adolescent','Young adult','Adult','Middle-aged','Elderly','Ancient','Unknown']],
+            ['Status', 'select', ['Alive','Dead','Missing','Unknown']],
+            ['Occupation', 'text'],
+            ['Location', 'suggest'],
+            ['Faction', 'suggest'],
+        ],
+        'organizations' => [
+            ['Image', 'image'],
+            ['Type', 'suggest', ['Guild','Cult','Noble house','Order','Criminal','Military','Merchant']],
+            ['Leader', 'text'],
+            ['Headquarters', 'suggest'],
+            ['Status', 'select', ['Active','Disbanded','Hidden','Unknown']],
+            ['Goal', 'textarea'],
+        ],
+        'places' => [
+            ['Image', 'image'],
+            ['Type', 'suggest', ['City','Town','Village','Castle','Fort','Dungeon','Ruin','Forest','Cave','Temple']],
+            ['Region', 'suggest'],
+            ['Population', 'text'],
+            ['Ruler', 'text'],
+            ['Status', 'select', ['Thriving','Struggling','Abandoned','Destroyed','Unknown']],
+        ],
+        'points of interest' => [
+            ['Image', 'image'],
+            ['Type', 'suggest', ['Landmark','Shop','Tavern','Shrine','Monument','Natural','Other']],
+            ['Region', 'suggest'],
+            ['Notable for', 'textarea'],
+        ],
+        'items' => [
+            ['Image', 'image'],
+            ['Type', 'suggest', ['Weapon','Armor','Potion','Scroll','Ring','Wand','Rod','Staff','Wondrous item']],
+            ['Rarity', 'select', ['Common','Uncommon','Rare','Very rare','Legendary','Artifact']],
+            ['Attunement', 'select', ['No','Yes']],
+            ['Owner', 'suggest'],
+            ['Value', 'text'],
+        ],
+        'sessions' => [
+            ['Played on', 'date'],
+            ['Present', 'multi'],
+            ['Recap', 'text'],
+        ],
+    ];
+
+    /** Resolve the fields shown for a page in the given category (with inheritance). */
+    public static function fieldsFor(int $campaignId, ?int $categoryId): array
+    {
+        $guard = 0;
+        while ($categoryId !== null && $guard++ < 10) {
+            $fields = self::rawFields($categoryId);
+            if ($fields) {
+                return $fields;
+            }
+            $parent = Db::run('SELECT parent_id FROM categories WHERE id = ?', [$categoryId])->fetch();
+            $categoryId = $parent && $parent['parent_id'] !== null ? (int) $parent['parent_id'] : null;
+        }
+        return [];
+    }
+
+    /** Fields defined directly on a category (no inheritance) — for the editor. */
+    public static function rawFields(int $categoryId): array
+    {
+        $rows = Db::run(
+            'SELECT * FROM category_fields WHERE category_id = ? ORDER BY sort_order, id',
+            [$categoryId]
+        )->fetchAll();
+        foreach ($rows as &$r) {
+            $r['options'] = $r['options'] ? (json_decode($r['options'], true) ?: []) : [];
+        }
+        return $rows;
+    }
+
+    /** Distinct values previously entered for a field across the campaign (learning dropdown). */
+    public static function suggestions(int $campaignId, string $fieldKey): array
+    {
+        $rows = Db::run(
+            'SELECT DISTINCT pm.meta_value
+             FROM page_meta pm JOIN pages p ON p.id = pm.page_id
+             WHERE p.campaign_id = ? AND pm.meta_key = ? AND pm.meta_value <> ""
+             ORDER BY pm.meta_value',
+            [$campaignId, $fieldKey]
+        )->fetchAll();
+        return array_column($rows, 'meta_value');
+    }
+
+    /**
+     * Replace the field set for a category.
+     * @param array<int,array{label:string,type:string,options:string}> $fields
+     */
+    public static function saveFields(int $campaignId, int $categoryId, array $fields): void
+    {
+        Db::run('DELETE FROM category_fields WHERE category_id = ? AND campaign_id = ?', [$categoryId, $campaignId]);
+        $order = 0;
+        foreach ($fields as $f) {
+            $label = trim($f['label'] ?? '');
+            if ($label === '') {
+                continue;
+            }
+            $type = in_array($f['type'] ?? 'text', self::TYPES, true) ? $f['type'] : 'text';
+            $options = self::parseOptions($f['options'] ?? '');
+            Db::run(
+                'INSERT INTO category_fields (campaign_id, category_id, label, field_key, type, options, sort_order)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)',
+                [$campaignId, $categoryId, $label, Slug::make($label), $type, $options ? json_encode($options) : null, $order++]
+            );
+        }
+    }
+
+    /** Seed a category's default field set if it currently has none. Returns true if seeded. */
+    public static function seedForCategory(int $campaignId, int $categoryId, string $categoryName): bool
+    {
+        $key = mb_strtolower(trim($categoryName));
+        if (!isset(self::DEFAULTS[$key])) {
+            return false;
+        }
+        if (self::rawFields($categoryId)) {
+            return false; // don't clobber existing fields
+        }
+        $order = 0;
+        foreach (self::DEFAULTS[$key] as $def) {
+            [$label, $type] = $def;
+            $options = $def[2] ?? [];
+            Db::run(
+                'INSERT INTO category_fields (campaign_id, category_id, label, field_key, type, options, sort_order)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)',
+                [$campaignId, $categoryId, $label, Slug::make($label), $type, $options ? json_encode($options) : null, $order++]
+            );
+        }
+        return true;
+    }
+
+    /** Seed defaults for every matching category in a campaign (used at creation + on demand). */
+    public static function seedCampaign(int $campaignId): int
+    {
+        $seeded = 0;
+        $cats = Db::run('SELECT id, name FROM categories WHERE campaign_id = ?', [$campaignId])->fetchAll();
+        foreach ($cats as $c) {
+            if (self::seedForCategory($campaignId, (int) $c['id'], $c['name'])) {
+                $seeded++;
+            }
+        }
+        return $seeded;
+    }
+
+    /** Total number of template fields defined across a campaign. */
+    public static function countForCampaign(int $campaignId): int
+    {
+        return (int) Db::run(
+            'SELECT COUNT(*) AS n FROM category_fields WHERE campaign_id = ?',
+            [$campaignId]
+        )->fetch()['n'];
+    }
+
+    /** Does this category (or an ancestor) resolve to the Sessions-style template? */
+    public static function isSessionCategory(int $campaignId, ?int $categoryId): bool
+    {
+        $guard = 0;
+        while ($categoryId !== null && $guard++ < 10) {
+            $row = Db::run('SELECT name, parent_id FROM categories WHERE id = ?', [$categoryId])->fetch();
+            if (!$row) {
+                break;
+            }
+            if (mb_strtolower(trim($row['name'])) === 'sessions') {
+                return true;
+            }
+            $categoryId = $row['parent_id'] !== null ? (int) $row['parent_id'] : null;
+        }
+        return false;
+    }
+
+    /** Turn a newline- or comma-separated option string into a clean array. */
+    private static function parseOptions(string $raw): array
+    {
+        $parts = preg_split('/[\r\n,]+/', $raw);
+        $out = [];
+        foreach ($parts as $p) {
+            $p = trim($p);
+            if ($p !== '') {
+                $out[] = $p;
+            }
+        }
+        return $out;
+    }
+}

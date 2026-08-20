@@ -12,6 +12,7 @@ use App\Lib\View;
 use App\Models\Campaign;
 use App\Models\Category;
 use App\Models\Page;
+use App\Models\Template;
 
 final class CampaignController
 {
@@ -50,15 +51,28 @@ final class CampaignController
     public static function show(array $params): void
     {
         $campaign = Guard::campaign($params['id']);
-        $tree = Category::tree((int) $campaign['id']);
-        $pages = Page::listForCampaign((int) $campaign['id']);
+        $cid = (int) $campaign['id'];
+        $tree = Category::tree($cid);
+        $pages = Page::listForCampaign($cid);
 
         View::render('campaigns/show', [
-            'campaign' => $campaign,
-            'tree'     => $tree,
-            'members'  => Campaign::members((int) $campaign['id']),
-            'hasPages' => count($pages) > 0,
-            'firstPage'=> $pages[0] ?? null,
+            'campaign'  => $campaign,
+            'tree'      => $tree,
+            'members'   => Campaign::members($cid),
+            'hasPages'  => count($pages) > 0,
+            'firstPage' => $pages[0] ?? null,
+            'hasFields' => Template::countForCampaign($cid) > 0,
         ], 'app_layout');
+    }
+
+    /** Seed default field templates for a pre-existing campaign's categories. */
+    public static function seedTemplates(array $params): void
+    {
+        $campaign = Guard::campaign($params['id']);
+        Csrf::check();
+        $n = Template::seedCampaign((int) $campaign['id']);
+        Flash::set($n > 0 ? 'success' : 'error',
+            $n > 0 ? "Set up default fields for {$n} categories." : 'No matching default templates were found.');
+        redirect('/campaign/' . $campaign['id']);
     }
 }

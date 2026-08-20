@@ -23,6 +23,9 @@ services:
       APP_SECRET: ${APP_SECRET:-change-me}
     ports:
       - "${APP_PORT:-8080}:80"
+    volumes:
+      # Persist uploaded images across image updates.
+      - codex_uploads:/var/www/html/public/uploads
 
   db:
     image: mysql:8.0
@@ -42,3 +45,4 @@ services:
 
 volumes:
   codex_db:
+  codex_uploads:

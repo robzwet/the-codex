@@ -142,6 +142,20 @@ final class Page
         )->fetchAll();
     }
 
+    /** Usernames of the original author and last editor. */
+    public static function authors(int $pageId): array
+    {
+        $row = Db::run(
+            'SELECT cu.username AS created_by, uu.username AS updated_by, p.created_at, p.updated_at
+             FROM pages p
+             LEFT JOIN users cu ON cu.id = p.created_by
+             LEFT JOIN users uu ON uu.id = p.updated_by
+             WHERE p.id = ?',
+            [$pageId]
+        )->fetch();
+        return $row ?: ['created_by' => null, 'updated_by' => null, 'created_at' => null, 'updated_at' => null];
+    }
+
     public static function revisions(int $pageId): array
     {
         return Db::run(

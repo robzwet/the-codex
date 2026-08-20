@@ -6,6 +6,12 @@
 
 declare(strict_types=1);
 
+// Never leak PHP warnings/notices into HTTP responses — they can corrupt
+// redirects (headers already sent) and JSON. Errors are still logged.
+error_reporting(E_ALL);
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
+
 // Composer autoload (HTMLPurifier). Optional so CLI/migrate works pre-install.
 $composerAutoload = __DIR__ . '/../vendor/autoload.php';
 if (is_file($composerAutoload)) {

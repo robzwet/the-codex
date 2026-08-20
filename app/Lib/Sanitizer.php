@@ -26,6 +26,9 @@ final class Sanitizer
 
         if (self::$purifier === null) {
             $config = HTMLPurifier_Config::createDefault();
+            // We don't customise the HTML definition, so disable the on-disk
+            // definition cache — vendor/ is read-only in the container.
+            $config->set('Cache.DefinitionImpl', null);
             $config->set('HTML.Allowed', implode(',', [
                 'p', 'br', 'strong', 'em', 'u', 's',
                 'h1', 'h2', 'h3', 'h4',
