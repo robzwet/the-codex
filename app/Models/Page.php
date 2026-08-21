@@ -155,6 +155,34 @@ final class Page
         }
     }
 
+    // --- Body sections --------------------------------------------------------
+
+    /** @return array<int,array{title:string,body_html:string}> */
+    public static function sections(int $pageId): array
+    {
+        return Db::run(
+            'SELECT title, body_html FROM page_sections WHERE page_id = ? ORDER BY sort_order, id',
+            [$pageId]
+        )->fetchAll();
+    }
+
+    /** @param array<int,array{title:string,html:string}> $sections */
+    public static function saveSections(int $pageId, array $sections): void
+    {
+        Db::run('DELETE FROM page_sections WHERE page_id = ?', [$pageId]);
+        $order = 0;
+        foreach ($sections as $sec) {
+            $title = trim($sec['title'] ?? '');
+            if ($title === '') {
+                continue;
+            }
+            Db::run(
+                'INSERT INTO page_sections (page_id, title, body_html, sort_order) VALUES (?, ?, ?, ?)',
+                [$pageId, $title, Sanitizer::clean($sec['html'] ?? ''), $order++]
+            );
+        }
+    }
+
     // --- Backlinks & history --------------------------------------------------
 
     /** Pages that link TO this one. */

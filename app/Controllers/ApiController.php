@@ -61,7 +61,15 @@ final class ApiController
             'fields'     => Template::fieldsFor($cid, $categoryId),
             'values'     => $values,
             'campaignId' => $cid,
-            'scaffold'   => Template::scaffold($cid, $categoryId),
         ]);
+    }
+
+    /** Default section titles for a category (for rebuilding the editor accordion). */
+    public static function sections(array $params): void
+    {
+        $campaign = Guard::campaign($params['id']);
+        $cid = (int) $campaign['id'];
+        $categoryId = ($_GET['category'] ?? '') !== '' ? (int) $_GET['category'] : null;
+        json_response(['titles' => Template::sectionTitles($cid, $categoryId)]);
     }
 }

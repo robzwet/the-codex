@@ -14,10 +14,6 @@ use App\Models\Template;
  */
 $values = $values ?? [];
 
-// Carrier for the category's body scaffold; the editor JS reads this to
-// pre-fill section headings on a new (empty) page.
-echo '<div id="cat-scaffold" hidden>' . ($scaffold ?? '') . '</div>';
-
 if (empty($fields)) {
     echo '<p class="muted">This category has no template fields. Add some with “Manage fields”, or just write below.</p>';
     return;

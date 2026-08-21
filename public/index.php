@@ -61,6 +61,7 @@ $router->post('/campaign/{id}/page/{slug}/restore', [PageController::class, 'res
 // --- API ---
 $router->get('/api/campaign/{id}/search', [ApiController::class, 'search']);
 $router->get('/api/campaign/{id}/fields', [ApiController::class, 'fields']);
+$router->get('/api/campaign/{id}/sections', [ApiController::class, 'sections']);
 
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $router->dispatch($_SERVER['REQUEST_METHOD'] ?? 'GET', $path);

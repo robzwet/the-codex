@@ -91,18 +91,18 @@ final class Template
     ];
 
     /**
-     * Default body scaffolds (section headings) pre-filled into a new page's
-     * editor, keyed by category name. Dutch, matching the user's vault style.
+     * Default body sections ("chapters") per category. Each becomes its own
+     * collapsible rich-text editor. Dutch, matching the user's vault style.
      */
-    private const SCAFFOLDS = [
-        'party' => "<h2>Achtergrond</h2><p></p><h2>Spells &amp; trucs</h2><p></p><h2>Magische items</h2><p></p><h2>Memorabel</h2><p></p>",
-        'npcs' => "<h2>Wie is het</h2><p></p><h2>Waar ontmoet</h2><p></p><h2>Wat die weet / wil</h2><p></p><h2>Storyline</h2><h3>Ontmoeting</h3><p></p><h3>Gesprekken</h3><p></p><h3>Gebeurtenissen</h3><p></p>",
-        'organizations' => "<h2>Wie zijn ze</h2><p></p><h2>Doel</h2><p></p><h2>Leden</h2><p></p><h2>Geschiedenis met de groep</h2><p></p>",
-        'places' => "<h2>Beschrijving</h2><p></p><h2>Wie je hier vindt</h2><p></p><h2>Wat er gebeurd is</h2><p></p>",
-        'points of interest' => "<h2>Beschrijving</h2><p></p><h2>Wat er gebeurd is</h2><p></p>",
-        'quests' => "<h2>De opdracht</h2><p></p><h2>Voortgang</h2><p></p><h2>Nog te doen</h2><p></p>",
-        'items' => "<h2>Beschrijving</h2><p></p><h2>Herkomst</h2><p></p><h2>Eigenschappen</h2><p></p>",
-        'sessions' => "<h2>Verslag</h2><p></p><h2>Wie &amp; wat</h2><p></p><h2>Buit</h2><p></p>",
+    private const SECTIONS = [
+        'party' => ['Achtergrond', 'Spells & trucs', 'Magische items', 'Memorabel'],
+        'npcs' => ['Wie is het', 'Waar ontmoet', 'Wat die weet / wil', 'Ontmoeting', 'Gesprekken', 'Gebeurtenissen'],
+        'organizations' => ['Wie zijn ze', 'Doel', 'Leden', 'Geschiedenis met de groep'],
+        'places' => ['Beschrijving', 'Wie je hier vindt', 'Wat er gebeurd is'],
+        'points of interest' => ['Beschrijving', 'Wat er gebeurd is'],
+        'quests' => ['De opdracht', 'Voortgang', 'Nog te doen'],
+        'items' => ['Beschrijving', 'Herkomst', 'Eigenschappen'],
+        'sessions' => ['Verslag', 'Wie & wat', 'Buit'],
     ];
 
     /** Resolve the fields shown for a page in the given category (with inheritance). */
@@ -120,8 +120,8 @@ final class Template
         return [];
     }
 
-    /** Default body scaffold (section headings) for a category, with inheritance. */
-    public static function scaffold(int $campaignId, ?int $categoryId): string
+    /** Default section titles for a category, with inheritance. */
+    public static function sectionTitles(int $campaignId, ?int $categoryId): array
     {
         $guard = 0;
         while ($categoryId !== null && $guard++ < 10) {
@@ -130,12 +130,12 @@ final class Template
                 break;
             }
             $key = mb_strtolower(trim($row['name']));
-            if (isset(self::SCAFFOLDS[$key])) {
-                return self::SCAFFOLDS[$key];
+            if (isset(self::SECTIONS[$key])) {
+                return self::SECTIONS[$key];
             }
             $categoryId = $row['parent_id'] !== null ? (int) $row['parent_id'] : null;
         }
-        return '';
+        return [];
     }
 
     /** Fields defined directly on a category (no inheritance) — for the editor. */
