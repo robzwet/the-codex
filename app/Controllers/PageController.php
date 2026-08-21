@@ -52,7 +52,15 @@ final class PageController
                 $val = User::name((int) $val) ?? $val;
                 $type = 'text';
             }
-            $display[] = ['label' => $f['label'], 'type' => $type, 'value' => $val];
+            $row = ['label' => $f['label'], 'type' => $type, 'value' => $val];
+            if ($type === 'link') {
+                $target = Page::findByTitle($cid, $val);
+                $row['exists'] = (bool) $target;
+                $row['href'] = $target
+                    ? '/campaign/' . $cid . '/page/' . rawurlencode($target['slug'])
+                    : '/campaign/' . $cid . '/new?title=' . rawurlencode($val);
+            }
+            $display[] = $row;
             $used[$f['field_key']] = true;
         }
         $leftover = [];
@@ -62,10 +70,16 @@ final class PageController
             }
         }
 
+        $sections = [];
+        foreach (Page::sections((int) $page['id']) as $sec) {
+            $sections[] = ['title' => $sec['title'], 'html' => WikiLinks::render($sec['body_html'] ?? '', $cid)];
+        }
+
         View::render('pages/show', [
             'campaign'  => $campaign,
             'tree'      => Category::tree($cid),
             'page'      => $page,
+            'sections'  => $sections,
             'bodyHtml'  => WikiLinks::render($page['body_html'] ?? '', $cid),
             'display'   => $display,
             'leftover'  => $leftover,
@@ -83,12 +97,16 @@ final class PageController
         $cid = (int) $campaign['id'];
         $categoryId = ($_GET['category'] ?? '') !== '' ? (int) $_GET['category'] : null;
 
+        $sections = array_map(
+            fn($t) => ['title' => $t, 'html' => ''],
+            Template::sectionTitles($cid, $categoryId)
+        );
+
         self::renderForm($campaign, 'create', [
             'title'       => $_GET['title'] ?? '',
-            'body_html'   => '',
             'category_id' => $categoryId,
             'slug'        => null,
-        ], [], $categoryId, '');
+        ], [], $categoryId, '', $sections);
     }
 
     public static function store(array $params): void
@@ -97,16 +115,18 @@ final class PageController
         Csrf::check();
         $cid = (int) $campaign['id'];
         $categoryId = self::categoryId($_POST['category_id'] ?? null);
+        $sections = self::parseSections();
 
         $id = Page::create(
             $cid,
             $_POST['title'] ?? '',
             $categoryId,
             Template::isSessionCategory($cid, $categoryId) ? 'note' : 'entity',
-            $_POST['body_html'] ?? '',
+            self::buildBody($sections),
             (int) Auth::id(),
             self::collectMeta($cid, $categoryId)
         );
+        Page::saveSections($id, $sections);
         Tag::setForPage($cid, $id, $_POST['tags'] ?? '');
 
         $page = Page::findById($id);
@@ -124,9 +144,27 @@ final class PageController
             return;
         }
 
+        $cid = (int) $campaign['id'];
+        $categoryId = $page['category_id'] !== null ? (int) $page['category_id'] : null;
+
         $values = [];
         foreach (Page::meta((int) $page['id']) as $m) {
             $values[$m['meta_key']] = $m['meta_value'];
+        }
+
+        // Existing sections, or migrate: default titles + any legacy body.
+        $sections = array_map(
+            fn($s) => ['title' => $s['title'], 'html' => $s['body_html'] ?? ''],
+            Page::sections((int) $page['id'])
+        );
+        if (!$sections) {
+            $sections = array_map(fn($t) => ['title' => $t, 'html' => ''], Template::sectionTitles($cid, $categoryId));
+            if (trim((string) ($page['body_html'] ?? '')) !== '') {
+                array_unshift($sections, ['title' => 'Notities', 'html' => $page['body_html']]);
+            }
+            if (!$sections) {
+                $sections = [['title' => 'Notities', 'html' => $page['body_html'] ?? '']];
+            }
         }
 
         self::renderForm(
@@ -134,8 +172,9 @@ final class PageController
             'edit',
             $page,
             $values,
-            $page['category_id'] !== null ? (int) $page['category_id'] : null,
-            implode(', ', Tag::forPage((int) $page['id']))
+            $categoryId,
+            implode(', ', Tag::forPage((int) $page['id'])),
+            $sections
         );
     }
 
@@ -152,15 +191,17 @@ final class PageController
         }
 
         $categoryId = self::categoryId($_POST['category_id'] ?? null);
+        $sections = self::parseSections();
         Page::update(
             (int) $page['id'],
             $cid,
             $_POST['title'] ?? '',
             $categoryId,
-            $_POST['body_html'] ?? '',
+            self::buildBody($sections),
             (int) Auth::id(),
             self::collectMeta($cid, $categoryId)
         );
+        Page::saveSections((int) $page['id'], $sections);
         Tag::setForPage($cid, (int) $page['id'], $_POST['tags'] ?? '');
 
         $fresh = Page::findById((int) $page['id']);
@@ -224,6 +265,8 @@ final class PageController
             (int) Auth::id(),
             $currentMeta
         );
+        // Rebuild sections from the restored combined body (<h2>title</h2> blocks).
+        Page::saveSections((int) $page['id'], self::splitBody($revision['body_html'] ?? ''));
 
         Flash::set('success', 'Restored an earlier version.');
         $fresh = Page::findById((int) $page['id']);
@@ -232,7 +275,7 @@ final class PageController
 
     // --- helpers --------------------------------------------------------------
 
-    private static function renderForm(array $campaign, string $mode, array $page, array $values, ?int $categoryId, string $tags): void
+    private static function renderForm(array $campaign, string $mode, array $page, array $values, ?int $categoryId, string $tags, array $sections): void
     {
         $cid = (int) $campaign['id'];
         View::render('pages/form', [
@@ -244,9 +287,52 @@ final class PageController
             'fields'     => Template::fieldsFor($cid, $categoryId),
             'values'     => $values,
             'campaignId' => $cid,
+            'sections'   => $sections,
             'tags'       => $tags,
             'allTags'    => array_column(Tag::allForCampaign($cid), 'tag'),
         ], 'app_layout');
+    }
+
+    /** @return array<int,array{title:string,html:string}> */
+    private static function parseSections(): array
+    {
+        $data = json_decode($_POST['sections_json'] ?? '', true);
+        if (!is_array($data)) {
+            return [];
+        }
+        $out = [];
+        foreach ($data as $s) {
+            $title = trim((string) ($s['title'] ?? ''));
+            if ($title !== '') {
+                $out[] = ['title' => $title, 'html' => (string) ($s['html'] ?? '')];
+            }
+        }
+        return $out;
+    }
+
+    /** Split a combined "<h2>title</h2>content" body back into sections. */
+    private static function splitBody(string $html): array
+    {
+        $sections = [];
+        if (preg_match_all('/<h2>(.*?)<\/h2>(.*?)(?=<h2>|$)/s', $html, $m, PREG_SET_ORDER)) {
+            foreach ($m as $mm) {
+                $sections[] = [
+                    'title' => trim(html_entity_decode(strip_tags($mm[1]), ENT_QUOTES)),
+                    'html'  => trim($mm[2]),
+                ];
+            }
+        }
+        return $sections;
+    }
+
+    /** Concatenate sections into a single body (for wikilink sync + search). */
+    private static function buildBody(array $sections): string
+    {
+        $parts = [];
+        foreach ($sections as $s) {
+            $parts[] = '<h2>' . htmlspecialchars($s['title'], ENT_QUOTES) . '</h2>' . $s['html'];
+        }
+        return implode("\n", $parts);
     }
 
     private static function categoryId($value): ?int

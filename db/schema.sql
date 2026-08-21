@@ -88,6 +88,17 @@ CREATE TABLE IF NOT EXISTS links (
     CONSTRAINT fk_link_target   FOREIGN KEY (target_page_id) REFERENCES pages(id)     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Collapsible body sections ("chapters") of a page, each its own rich-text block.
+CREATE TABLE IF NOT EXISTS page_sections (
+    id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    page_id    INT UNSIGNED NOT NULL,
+    title      VARCHAR(200) NOT NULL,
+    body_html  MEDIUMTEXT   NULL,
+    sort_order INT          NOT NULL DEFAULT 0,
+    KEY idx_section_page (page_id),
+    CONSTRAINT fk_section_page FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Free-form (optionally hierarchical, e.g. "quest/open-thread") tags on pages.
 CREATE TABLE IF NOT EXISTS page_tags (
     id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

@@ -17,7 +17,7 @@ use App\Lib\Slug;
  */
 final class Template
 {
-    public const TYPES = ['text', 'textarea', 'select', 'suggest', 'image', 'date', 'multi', 'user'];
+    public const TYPES = ['text', 'textarea', 'select', 'suggest', 'image', 'date', 'multi', 'user', 'link'];
 
     /**
      * Default field sets keyed by (lower-cased) category name, seeded on campaign
@@ -41,36 +41,36 @@ final class Template
             ['Age range', 'select', ['Child','Adolescent','Young adult','Adult','Middle-aged','Elderly','Ancient','Unknown']],
             ['Status', 'select', ['Alive','Dead','Undead','Missing','Unknown']],
             ['Occupation', 'text'],
-            ['Location', 'suggest'],
-            ['Faction', 'suggest'],
+            ['Location', 'link', ['Places']],
+            ['Faction', 'link', ['Organizations']],
         ],
         'quests' => [
-            ['Quest giver', 'suggest'],
+            ['Quest giver', 'link', ['NPCs']],
             ['Reward', 'text'],
             ['Status', 'select', ['Active','Open thread','Completed']],
-            ['Started (session)', 'text'],
-            ['Completed (session)', 'text'],
+            ['Started (session)', 'link', ['Sessions']],
+            ['Completed (session)', 'link', ['Sessions']],
         ],
         'organizations' => [
             ['Image', 'image'],
             ['Type', 'suggest', ['Guild','Cult','Noble house','Order','Criminal','Military','Merchant']],
-            ['Leader', 'text'],
-            ['Headquarters', 'suggest'],
+            ['Leader', 'link', ['NPCs']],
+            ['Headquarters', 'link', ['Places']],
             ['Status', 'select', ['Active','Disbanded','Hidden','Unknown']],
             ['Goal', 'textarea'],
         ],
         'places' => [
             ['Image', 'image'],
             ['Type', 'suggest', ['City','Town','Village','Castle','Fort','Dungeon','Ruin','Forest','Cave','Temple']],
-            ['Region', 'suggest'],
+            ['Region', 'link', ['Places']],
             ['Population', 'text'],
-            ['Ruler', 'text'],
+            ['Ruler', 'link', ['NPCs']],
             ['Status', 'select', ['Thriving','Struggling','Abandoned','Destroyed','Unknown']],
         ],
         'points of interest' => [
             ['Image', 'image'],
             ['Type', 'suggest', ['Landmark','Shop','Tavern','Shrine','Monument','Natural','Other']],
-            ['Region', 'suggest'],
+            ['Region', 'link', ['Places']],
             ['Notable for', 'textarea'],
         ],
         'items' => [
@@ -78,14 +78,31 @@ final class Template
             ['Type', 'suggest', ['Weapon','Armor','Potion','Scroll','Ring','Wand','Rod','Staff','Wondrous item']],
             ['Rarity', 'select', ['Common','Uncommon','Rare','Very rare','Legendary','Artifact']],
             ['Attunement', 'select', ['No','Yes']],
-            ['Owner', 'suggest'],
+            ['Owner', 'link', ['Party']],
             ['Value', 'text'],
         ],
         'sessions' => [
+            ['Session number', 'text'],
             ['Played on', 'date'],
+            ['Note-taker', 'user'],
             ['Present', 'multi'],
             ['Recap', 'text'],
         ],
+    ];
+
+    /**
+     * Default body sections ("chapters") per category. Each becomes its own
+     * collapsible rich-text editor. Dutch, matching the user's vault style.
+     */
+    private const SECTIONS = [
+        'party' => ['Achtergrond', 'Spells & trucs', 'Magische items', 'Memorabel'],
+        'npcs' => ['Wie is het', 'Waar ontmoet', 'Wat die weet / wil', 'Ontmoeting', 'Gesprekken', 'Gebeurtenissen'],
+        'organizations' => ['Wie zijn ze', 'Doel', 'Leden', 'Geschiedenis met de groep'],
+        'places' => ['Beschrijving', 'Wie je hier vindt', 'Wat er gebeurd is'],
+        'points of interest' => ['Beschrijving', 'Wat er gebeurd is'],
+        'quests' => ['De opdracht', 'Voortgang', 'Nog te doen'],
+        'items' => ['Beschrijving', 'Herkomst', 'Eigenschappen'],
+        'sessions' => ['Verslag', 'Wie & wat', 'Buit'],
     ];
 
     /** Resolve the fields shown for a page in the given category (with inheritance). */
@@ -99,6 +116,24 @@ final class Template
             }
             $parent = Db::run('SELECT parent_id FROM categories WHERE id = ?', [$categoryId])->fetch();
             $categoryId = $parent && $parent['parent_id'] !== null ? (int) $parent['parent_id'] : null;
+        }
+        return [];
+    }
+
+    /** Default section titles for a category, with inheritance. */
+    public static function sectionTitles(int $campaignId, ?int $categoryId): array
+    {
+        $guard = 0;
+        while ($categoryId !== null && $guard++ < 10) {
+            $row = Db::run('SELECT name, parent_id FROM categories WHERE id = ?', [$categoryId])->fetch();
+            if (!$row) {
+                break;
+            }
+            $key = mb_strtolower(trim($row['name']));
+            if (isset(self::SECTIONS[$key])) {
+                return self::SECTIONS[$key];
+            }
+            $categoryId = $row['parent_id'] !== null ? (int) $row['parent_id'] : null;
         }
         return [];
     }
@@ -155,15 +190,36 @@ final class Template
     /** Seed a category's default field set if it currently has none. Returns true if seeded. */
     public static function seedForCategory(int $campaignId, int $categoryId, string $categoryName): bool
     {
-        $key = mb_strtolower(trim($categoryName));
-        if (!isset(self::DEFAULTS[$key])) {
+        if (!self::hasDefaults($categoryName)) {
             return false;
         }
         if (self::rawFields($categoryId)) {
             return false; // don't clobber existing fields
         }
+        self::insertDefaults($campaignId, $categoryId, $categoryName);
+        return true;
+    }
+
+    /** Force a category's fields back to the defaults, replacing any existing ones. */
+    public static function forceSeedForCategory(int $campaignId, int $categoryId, string $categoryName): bool
+    {
+        if (!self::hasDefaults($categoryName)) {
+            return false;
+        }
+        Db::run('DELETE FROM category_fields WHERE category_id = ? AND campaign_id = ?', [$categoryId, $campaignId]);
+        self::insertDefaults($campaignId, $categoryId, $categoryName);
+        return true;
+    }
+
+    public static function hasDefaults(string $categoryName): bool
+    {
+        return isset(self::DEFAULTS[mb_strtolower(trim($categoryName))]);
+    }
+
+    private static function insertDefaults(int $campaignId, int $categoryId, string $categoryName): void
+    {
         $order = 0;
-        foreach (self::DEFAULTS[$key] as $def) {
+        foreach (self::DEFAULTS[mb_strtolower(trim($categoryName))] as $def) {
             [$label, $type] = $def;
             $options = $def[2] ?? [];
             Db::run(
@@ -172,7 +228,6 @@ final class Template
                 [$campaignId, $categoryId, $label, Slug::make($label), $type, $options ? json_encode($options) : null, $order++]
             );
         }
-        return true;
     }
 
     /** Seed defaults for every matching category in a campaign (used at creation + on demand). */

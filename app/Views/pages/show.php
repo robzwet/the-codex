@@ -62,6 +62,8 @@ foreach ($display as $d) {
                         <span class="k"><?= e($r['label']) ?>:</span>
                         <?php if ($r['type'] === 'multi'): ?>
                             <?= e(implode(', ', array_map('trim', explode(',', $r['value'])))) ?>
+                        <?php elseif ($r['type'] === 'link'): ?>
+                            <a class="wikilink<?= empty($r['exists']) ? ' wikilink--new' : '' ?>" href="<?= e($r['href']) ?>"><?= e($r['value']) ?></a>
                         <?php else: ?>
                             <?= e($r['value']) ?>
                         <?php endif; ?>
@@ -73,7 +75,19 @@ foreach ($display as $d) {
             </div>
         <?php endif; ?>
 
-        <div class="page-body"><?= $bodyHtml ?></div>
+        <?php if (!empty($sections)): ?>
+            <div class="page-sections">
+                <?php foreach ($sections as $sec): ?>
+                    <?php $hasContent = trim(strip_tags($sec['html'], '<img><ul><ol>')) !== '' || strpos($sec['html'], '<img') !== false; ?>
+                    <details class="page-section"<?= $hasContent ? ' open' : '' ?>>
+                        <summary><?= e($sec['title']) ?></summary>
+                        <div class="page-body"><?= $sec['html'] ?></div>
+                    </details>
+                <?php endforeach; ?>
+            </div>
+        <?php else: ?>
+            <div class="page-body"><?= $bodyHtml ?></div>
+        <?php endif; ?>
 
         <?php if (!empty($tags)): ?>
             <div class="tag-list">

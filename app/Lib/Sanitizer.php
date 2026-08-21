@@ -21,7 +21,7 @@ final class Sanitizer
     {
         // Graceful fallback if the vendor dir isn't present (e.g. bare CLI).
         if (!class_exists(HTMLPurifier::class)) {
-            return strip_tags($html, '<p><br><strong><em><u><s><h1><h2><h3><h4><ul><ol><li><blockquote><code><pre><hr><a>');
+            return strip_tags($html, '<p><br><strong><b><em><i><u><s><h1><h2><h3><h4><ul><ol><li><blockquote><code><pre><hr><a>');
         }
 
         if (self::$purifier === null) {
@@ -30,7 +30,7 @@ final class Sanitizer
             // definition cache — vendor/ is read-only in the container.
             $config->set('Cache.DefinitionImpl', null);
             $config->set('HTML.Allowed', implode(',', [
-                'p', 'br', 'strong', 'em', 'u', 's',
+                'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's',
                 'h1', 'h2', 'h3', 'h4',
                 'ul', 'ol', 'li', 'blockquote',
                 'code', 'pre', 'hr',

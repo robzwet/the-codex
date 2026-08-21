@@ -83,9 +83,10 @@ final class CampaignController
     {
         $campaign = Guard::campaign($params['id']);
         Csrf::check();
-        $n = Template::seedCampaign((int) $campaign['id']);
-        Flash::set($n > 0 ? 'success' : 'error',
-            $n > 0 ? "Set up default fields for {$n} categories." : 'No matching default templates were found.');
-        redirect('/campaign/' . $campaign['id']);
+        $cid = (int) $campaign['id'];
+        Category::ensureDefaults($cid);      // add missing default categories (e.g. Quests)
+        $n = Template::seedCampaign($cid);   // seed fields on categories that have none
+        Flash::set('success', "Field templates ready ({$n} categories seeded).");
+        redirect('/campaign/' . $cid);
     }
 }

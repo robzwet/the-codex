@@ -26,6 +26,32 @@ final class Page
         return $row ?: null;
     }
 
+    /** Resolve a page in a campaign by its title (or slug). */
+    public static function findByTitle(int $campaignId, string $title): ?array
+    {
+        $row = Db::run(
+            'SELECT * FROM pages WHERE campaign_id = ? AND (title = ? OR slug = ?) LIMIT 1',
+            [$campaignId, $title, Slug::make($title)]
+        )->fetch();
+        return $row ?: null;
+    }
+
+    /** Titles of pages in the given categories — for link-field pickers. */
+    public static function titlesInCategories(int $campaignId, array $catIds): array
+    {
+        if (!$catIds) {
+            return [];
+        }
+        $in = implode(',', array_fill(0, count($catIds), '?'));
+        return array_column(
+            Db::run(
+                "SELECT title FROM pages WHERE campaign_id = ? AND category_id IN ($in) ORDER BY title",
+                array_merge([$campaignId], $catIds)
+            )->fetchAll(),
+            'title'
+        );
+    }
+
     /** Lightweight list (id/title/slug/category/kind) used for the tree + search. */
     public static function listForCampaign(int $campaignId): array
     {
@@ -61,6 +87,7 @@ final class Page
         self::saveRevision($id, $title, $html, $userId);
         self::saveMeta($id, $meta);
         WikiLinks::sync($campaignId, $id, $html);
+        WikiLinks::syncFieldLinks($campaignId, $id, $categoryId);
         // Light up any red links that were waiting for a page with this title.
         WikiLinks::resolveInbound($campaignId, $id, $title);
 
@@ -92,6 +119,7 @@ final class Page
         self::saveRevision($id, $title, $html, $userId);
         self::saveMeta($id, $meta);
         WikiLinks::sync($campaignId, $id, $html);
+        WikiLinks::syncFieldLinks($campaignId, $id, $categoryId);
         WikiLinks::resolveInbound($campaignId, $id, $title);
     }
 
@@ -123,6 +151,34 @@ final class Page
             Db::run(
                 'INSERT INTO page_meta (page_id, meta_key, meta_value, sort_order) VALUES (?, ?, ?, ?)',
                 [$pageId, $key, trim($row['value'] ?? ''), $order++]
+            );
+        }
+    }
+
+    // --- Body sections --------------------------------------------------------
+
+    /** @return array<int,array{title:string,body_html:string}> */
+    public static function sections(int $pageId): array
+    {
+        return Db::run(
+            'SELECT title, body_html FROM page_sections WHERE page_id = ? ORDER BY sort_order, id',
+            [$pageId]
+        )->fetchAll();
+    }
+
+    /** @param array<int,array{title:string,html:string}> $sections */
+    public static function saveSections(int $pageId, array $sections): void
+    {
+        Db::run('DELETE FROM page_sections WHERE page_id = ?', [$pageId]);
+        $order = 0;
+        foreach ($sections as $sec) {
+            $title = trim($sec['title'] ?? '');
+            if ($title === '') {
+                continue;
+            }
+            Db::run(
+                'INSERT INTO page_sections (page_id, title, body_html, sort_order) VALUES (?, ?, ?, ?)',
+                [$pageId, $title, Sanitizer::clean($sec['html'] ?? ''), $order++]
             );
         }
     }

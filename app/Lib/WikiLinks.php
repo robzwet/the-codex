@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Lib;
 
+use App\Models\Page;
+use App\Models\Template;
+
 /**
  * Obsidian-style [[wikilinks]].
  *
@@ -72,6 +75,36 @@ final class WikiLinks
             Db::run(
                 'INSERT INTO links (campaign_id, source_page_id, target_page_id, target_title) VALUES (?, ?, ?, ?)',
                 [$campaignId, $sourcePageId, $target ? (int) $target['id'] : null, $title]
+            );
+        }
+    }
+
+    /**
+     * Add relationship links from a page's `link`-type template fields (e.g. an
+     * NPC's Faction, a Quest's giver) so those references appear as backlinks on
+     * the target page. Run AFTER sync() so it isn't wiped.
+     */
+    public static function syncFieldLinks(int $campaignId, int $pageId, ?int $categoryId): void
+    {
+        $meta = [];
+        foreach (Page::meta($pageId) as $m) {
+            $meta[$m['meta_key']] = $m['meta_value'];
+        }
+        foreach (Template::fieldsFor($campaignId, $categoryId) as $f) {
+            if ($f['type'] !== 'link') {
+                continue;
+            }
+            $title = trim($meta[$f['field_key']] ?? '');
+            if ($title === '') {
+                continue;
+            }
+            $target = Db::run(
+                'SELECT id FROM pages WHERE campaign_id = ? AND (title = ? OR slug = ?) LIMIT 1',
+                [$campaignId, $title, Slug::make($title)]
+            )->fetch();
+            Db::run(
+                'INSERT INTO links (campaign_id, source_page_id, target_page_id, target_title) VALUES (?, ?, ?, ?)',
+                [$campaignId, $pageId, $target ? (int) $target['id'] : null, $title]
             );
         }
     }

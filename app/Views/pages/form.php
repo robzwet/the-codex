@@ -37,6 +37,7 @@ $renderOptions = function (int $parent, int $depth) use (&$renderOptions, $byPar
         <form method="post" action="<?= e($action) ?>" id="page-form" enctype="multipart/form-data"
               data-search-url="/api/campaign/<?= $cid ?>/search"
               data-fields-url="/api/campaign/<?= $cid ?>/fields"
+              data-sections-url="/api/campaign/<?= $cid ?>/sections"
               data-page-id="<?= $isEdit ? (int) $page['id'] : '' ?>">
             <?= Csrf::field() ?>
 
@@ -61,22 +62,49 @@ $renderOptions = function (int $parent, int $depth) use (&$renderOptions, $byPar
                 </div>
             </fieldset>
 
-            <label style="margin-top:18px;">Body <span class="muted">— type <code>[[</code> to link another page</span></label>
+            <label style="margin-top:18px;">Sections <span class="muted">— click a title to fold it open; type <code>[[</code> to link a page</span></label>
             <div class="editor-toolbar" id="toolbar">
                 <button type="button" data-cmd="bold"><b>B</b></button>
                 <button type="button" data-cmd="italic"><i>I</i></button>
                 <button type="button" data-cmd="underline"><u>U</u></button>
-                <button type="button" data-block="h2">H2</button>
                 <button type="button" data-block="h3">H3</button>
                 <button type="button" data-block="blockquote">&ldquo;</button>
                 <button type="button" data-cmd="insertUnorderedList">• List</button>
                 <button type="button" data-cmd="insertOrderedList">1. List</button>
                 <button type="button" data-wikilink>[[ Link ]]</button>
+                <span class="muted" style="align-self:center;font-size:12px;">↑ acts on the open section</span>
             </div>
-            <div class="editor" id="editor" contenteditable="true"
-                 data-placeholder="Write your notes here…"><?= $page['body_html'] ?? '' ?></div>
 
-            <input type="hidden" name="body_html" id="body_html">
+            <div id="sections">
+                <?php foreach (($sections ?? []) as $sec): ?>
+                    <details class="section-edit">
+                        <summary>
+                            <div class="section-summary">
+                                <span class="section-arrow" aria-hidden="true"></span>
+                                <input type="text" class="section-title-input" value="<?= e($sec['title']) ?>" placeholder="Section title">
+                                <button type="button" class="section-remove" title="Remove section">✕</button>
+                            </div>
+                        </summary>
+                        <div class="editor section-editor" contenteditable="true" data-placeholder="Write here…"><?= $sec['html'] ?? '' ?></div>
+                    </details>
+                <?php endforeach; ?>
+            </div>
+            <button type="button" class="btn btn-sm" id="add-section">+ Add section</button>
+
+            <template id="section-row-template">
+                <details class="section-edit" open>
+                    <summary>
+                        <div class="section-summary">
+                            <span class="section-arrow" aria-hidden="true"></span>
+                            <input type="text" class="section-title-input" value="" placeholder="Section title">
+                            <button type="button" class="section-remove" title="Remove section">✕</button>
+                        </div>
+                    </summary>
+                    <div class="editor section-editor" contenteditable="true" data-placeholder="Write here…"></div>
+                </details>
+            </template>
+
+            <input type="hidden" name="sections_json" id="sections_json">
 
             <label style="margin-top:18px;">Tags <span class="muted">— comma-separated, e.g. <code>quest/open-thread, villain</code></span></label>
             <input type="text" name="tags" value="<?= e($tags ?? '') ?>" list="all-tags" placeholder="add tags…">

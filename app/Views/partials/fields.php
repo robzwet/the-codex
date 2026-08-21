@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\Campaign;
+use App\Models\Category;
+use App\Models\Page;
 use App\Models\Template;
 
 /**
@@ -38,6 +40,18 @@ foreach ($fields as $f):
                     <option value="<?= e($opt) ?>" <?= $val === $opt ? 'selected' : '' ?>><?= e($opt) ?></option>
                 <?php endforeach; ?>
             </select>
+
+        <?php elseif ($f['type'] === 'link'): ?>
+            <?php
+            $targetCat = $f['options'][0] ?? '';
+            $titles = $targetCat ? Page::titlesInCategories($campaignId, Category::idsByName($campaignId, $targetCat)) : [];
+            ?>
+            <input type="text" id="<?= e($id) ?>" name="field[<?= e($key) ?>]" value="<?= e($val) ?>"
+                   list="dl_<?= e($id) ?>"
+                   placeholder="<?= $targetCat ? 'Pick an existing ' . e($targetCat) . ' — or type a new name' : 'Pick an existing page' ?>">
+            <datalist id="dl_<?= e($id) ?>">
+                <?php foreach ($titles as $t): ?><option value="<?= e($t) ?>"></option><?php endforeach; ?>
+            </datalist>
 
         <?php elseif ($f['type'] === 'user'): ?>
             <select id="<?= e($id) ?>" name="field[<?= e($key) ?>]">

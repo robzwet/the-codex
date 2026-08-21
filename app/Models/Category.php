@@ -37,6 +37,32 @@ final class Category
         }
     }
 
+    /** Add any missing default categories (by name) to an existing campaign. Returns count added. */
+    public static function ensureDefaults(int $campaignId): int
+    {
+        $existing = [];
+        foreach (self::forCampaign($campaignId) as $c) {
+            $existing[mb_strtolower(trim($c['name']))] = (int) $c['id'];
+        }
+        $added = 0;
+        $order = 1000;
+        foreach (self::DEFAULTS as $cat) {
+            $key = mb_strtolower($cat['name']);
+            if (!isset($existing[$key])) {
+                $existing[$key] = self::create($campaignId, $cat['name'], null, $cat['icon'], $order++);
+                $added++;
+            }
+            foreach ($cat['children'] ?? [] as $childName) {
+                if (!isset($existing[mb_strtolower($childName)])) {
+                    self::create($campaignId, $childName, $existing[$key], null, 0);
+                    $existing[mb_strtolower($childName)] = 1;
+                    $added++;
+                }
+            }
+        }
+        return $added;
+    }
+
     public static function create(int $campaignId, string $name, ?int $parentId, ?string $icon, int $sortOrder = 0): int
     {
         Db::run(
@@ -58,6 +84,36 @@ final class Category
     {
         // Child categories cascade; pages fall back to uncategorised (ON DELETE SET NULL).
         Db::run('DELETE FROM categories WHERE id = ? AND campaign_id = ?', [$id, $campaignId]);
+    }
+
+    /** A category (matched by name) plus all its descendant category ids. */
+    public static function idsByName(int $campaignId, string $name): array
+    {
+        $cats = Db::run('SELECT id, name, parent_id FROM categories WHERE campaign_id = ?', [$campaignId])->fetchAll();
+        $root = null;
+        foreach ($cats as $c) {
+            if (mb_strtolower(trim($c['name'])) === mb_strtolower(trim($name))) {
+                $root = (int) $c['id'];
+                break;
+            }
+        }
+        if ($root === null) {
+            return [];
+        }
+        $childrenOf = [];
+        foreach ($cats as $c) {
+            $childrenOf[(int) ($c['parent_id'] ?? 0)][] = (int) $c['id'];
+        }
+        $ids = [$root];
+        $stack = [$root];
+        while ($stack) {
+            $x = array_pop($stack);
+            foreach ($childrenOf[$x] ?? [] as $child) {
+                $ids[] = $child;
+                $stack[] = $child;
+            }
+        }
+        return array_values(array_unique($ids));
     }
 
     /** Flat list for a campaign, ordered for tree building. */

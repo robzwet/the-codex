@@ -282,3 +282,28 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
 .invite-code { font-family: monospace; background: var(--bg-elevated); padding: 2px 8px; border-radius: 5px; color: var(--gold); letter-spacing: 1px; }
 .empty-state { text-align: center; color: var(--text-muted); margin-top: 12vh; }
 .empty-state h2 { color: var(--gold); }
+
+/* --- Section accordion (editor) --- */
+.editor-toolbar { border-radius: var(--radius); border-bottom: 1px solid var(--border); margin-bottom: 10px; }
+.section-edit { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; background: var(--bg-panel); }
+.section-edit > summary { list-style: none; cursor: pointer; padding: 7px 12px; }
+.section-edit > summary::-webkit-details-marker { display: none; }
+.section-summary { display: flex; align-items: center; gap: 8px; }
+.section-arrow { flex-shrink: 0; }
+.section-arrow::before { content: "\25B8"; color: var(--text-muted); }
+.section-edit[open] > summary .section-arrow::before { content: "\25BE"; }
+.section-summary .section-title-input { flex: 1 1 auto; width: auto; min-width: 0; background: transparent; border: 1px solid transparent; border-radius: 5px; color: var(--gold-soft); font-family: var(--serif); font-variant: small-caps; letter-spacing: .5px; font-size: 16px; padding: 3px 6px; }
+.section-summary .section-title-input:hover { border-color: var(--border); }
+.section-summary .section-title-input:focus { border-color: var(--accent); background: var(--bg); outline: none; }
+.section-remove { margin-left: auto; flex-shrink: 0; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px; }
+.section-remove:hover { color: var(--danger); }
+.section-edit .section-editor { min-height: 110px; border: none; border-top: 1px solid var(--border); border-radius: 0 0 var(--radius) var(--radius); background: var(--bg); }
+
+/* --- Section accordion (page view) --- */
+.page-sections { margin-top: 10px; }
+.page-section { margin-bottom: 6px; }
+.page-section > summary { list-style: none; cursor: pointer; font-family: var(--serif); font-variant: small-caps; letter-spacing: .5px; color: var(--gold); font-size: 19px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.page-section > summary::-webkit-details-marker { display: none; }
+.page-section > summary::before { content: "\25B8  "; color: var(--text-muted); font-size: 14px; }
+.page-section[open] > summary::before { content: "\25BE  "; }
+.page-section .page-body { padding: 8px 0 6px; }

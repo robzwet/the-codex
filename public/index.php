@@ -46,6 +46,7 @@ $router->post('/campaign/{id}/categories/{cid}/delete', [CategoryController::cla
 $router->get('/campaign/{id}/category/{cid}/fields', [FieldController::class, 'edit']);
 $router->post('/campaign/{id}/category/{cid}/fields', [FieldController::class, 'save']);
 $router->post('/campaign/{id}/category/{cid}/fields/defaults', [FieldController::class, 'loadDefaults']);
+$router->post('/campaign/{id}/category/{cid}/fields/reset', [FieldController::class, 'reset']);
 
 // --- Pages ---
 $router->get('/campaign/{id}/new', [PageController::class, 'createForm']);
@@ -60,6 +61,7 @@ $router->post('/campaign/{id}/page/{slug}/restore', [PageController::class, 'res
 // --- API ---
 $router->get('/api/campaign/{id}/search', [ApiController::class, 'search']);
 $router->get('/api/campaign/{id}/fields', [ApiController::class, 'fields']);
+$router->get('/api/campaign/{id}/sections', [ApiController::class, 'sections']);
 
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $router->dispatch($_SERVER['REQUEST_METHOD'] ?? 'GET', $path);
