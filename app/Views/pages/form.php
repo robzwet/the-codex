@@ -78,6 +78,12 @@ $renderOptions = function (int $parent, int $depth) use (&$renderOptions, $byPar
 
             <input type="hidden" name="body_html" id="body_html">
 
+            <label style="margin-top:18px;">Tags <span class="muted">— comma-separated, e.g. <code>quest/open-thread, villain</code></span></label>
+            <input type="text" name="tags" value="<?= e($tags ?? '') ?>" list="all-tags" placeholder="add tags…">
+            <datalist id="all-tags">
+                <?php foreach (($allTags ?? []) as $t): ?><option value="<?= e($t) ?>"></option><?php endforeach; ?>
+            </datalist>
+
             <div style="margin-top:18px;display:flex;gap:8px;">
                 <button type="submit" class="btn btn-primary"><?= $isEdit ? 'Save changes' : 'Create page' ?></button>
                 <a class="btn" href="<?= $isEdit

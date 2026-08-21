@@ -11,6 +11,7 @@ use App\Lib\Guard;
 use App\Lib\View;
 use App\Models\Campaign;
 use App\Models\Category;
+use App\Models\Dashboard;
 use App\Models\Page;
 use App\Models\Template;
 
@@ -62,6 +63,18 @@ final class CampaignController
             'hasPages'  => count($pages) > 0,
             'firstPage' => $pages[0] ?? null,
             'hasFields' => Template::countForCampaign($cid) > 0,
+        ], 'app_layout');
+    }
+
+    /** Live campaign hub: party, quests, sessions, living enemies, items. */
+    public static function dashboardView(array $params): void
+    {
+        $campaign = Guard::campaign($params['id']);
+        $cid = (int) $campaign['id'];
+        View::render('campaigns/dashboard_view', [
+            'campaign' => $campaign,
+            'tree'     => Category::tree($cid),
+            'data'     => Dashboard::build($cid),
         ], 'app_layout');
     }
 

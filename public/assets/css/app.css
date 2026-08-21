@@ -248,6 +248,36 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
 .infobox-image img { max-width: 100%; border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 10px; }
 .byline { text-align: center; font-size: 13px; margin: -14px 0 20px; }
 
+/* When a page has an image, float its infobox to the right and let text wrap. */
+.infobox--float { float: right; width: 300px; max-width: 42%; margin: 0 0 16px 24px; }
+.backlinks, .tag-list { clear: both; }
+@media (max-width: 768px) {
+    .infobox--float { float: none; width: auto; max-width: 100%; margin: 0 0 22px; }
+}
+
+/* --- Sidebar nav --- */
+.sidebar-nav { display: flex; gap: 6px; padding: 8px 16px 10px; border-bottom: 1px solid var(--border); margin-bottom: 8px; flex-wrap: wrap; }
+.sidebar-nav a { font-size: 13px; color: var(--text-muted); padding: 3px 8px; border-radius: 5px; }
+.sidebar-nav a:hover { background: var(--bg-panel); color: var(--gold); text-decoration: none; }
+
+/* --- Tags --- */
+.tag-list { margin-top: 22px; display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { display: inline-block; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 12px; padding: 2px 10px; font-size: 13px; color: var(--link); }
+.tag:hover { text-decoration: none; border-color: var(--link); }
+.tag--active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.tag-cloud { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.tag-count { color: var(--text-muted); font-size: 11px; }
+
+/* --- Session prev/next --- */
+.session-nav { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px; }
+
+/* --- Dashboard tables --- */
+.dash-table { width: 100%; border-collapse: collapse; margin: 8px 0 20px; }
+.dash-table th, .dash-table td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--border); }
+.dash-table th { color: var(--gold-soft); font-family: var(--serif); font-variant: small-caps; font-weight: 600; }
+.dash-table tbody tr:hover { background: var(--bg-panel); }
+.main h2 { color: var(--gold); border-bottom: 1px solid var(--border); padding-bottom: 5px; margin-top: 30px; }
+
 .muted { color: var(--text-muted); }
 .invite-code { font-family: monospace; background: var(--bg-elevated); padding: 2px 8px; border-radius: 5px; color: var(--gold); letter-spacing: 1px; }
 .empty-state { text-align: center; color: var(--text-muted); margin-top: 12vh; }

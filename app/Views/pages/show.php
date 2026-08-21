@@ -32,6 +32,17 @@ foreach ($display as $d) {
             </form>
         </div>
 
+        <?php if (!empty($isSession) && (($neighbors['prev'] ?? null) || ($neighbors['next'] ?? null))): ?>
+            <div class="session-nav">
+                <?php if ($neighbors['prev']): ?>
+                    <a href="/campaign/<?= $cid ?>/page/<?= rawurlencode($neighbors['prev']['slug']) ?>">← <?= e($neighbors['prev']['title']) ?></a>
+                <?php else: ?><span></span><?php endif; ?>
+                <?php if ($neighbors['next']): ?>
+                    <a href="/campaign/<?= $cid ?>/page/<?= rawurlencode($neighbors['next']['slug']) ?>"><?= e($neighbors['next']['title']) ?> →</a>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+
         <h1 class="page-title"><?= e($page['title']) ?></h1>
         <div class="page-title-rule">&#10022; &#10022; &#10022;</div>
         <p class="byline muted">
@@ -41,7 +52,7 @@ foreach ($display as $d) {
         </p>
 
         <?php if ($image || $rows || $leftover): ?>
-            <div class="infobox">
+            <div class="infobox<?= $image ? ' infobox--float' : '' ?>">
                 <div class="infobox-header"><?= $isSession ? 'Session' : 'Details' ?></div>
                 <?php if ($image): ?>
                     <div class="infobox-image"><img src="<?= e($image) ?>" alt="<?= e($page['title']) ?>"></div>
@@ -63,6 +74,14 @@ foreach ($display as $d) {
         <?php endif; ?>
 
         <div class="page-body"><?= $bodyHtml ?></div>
+
+        <?php if (!empty($tags)): ?>
+            <div class="tag-list">
+                <?php foreach ($tags as $t): ?>
+                    <a class="tag" href="/campaign/<?= $cid ?>/tags?tag=<?= rawurlencode($t) ?>">#<?= e($t) ?></a>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
 
         <div class="backlinks">
             <h3>Linked from</h3>

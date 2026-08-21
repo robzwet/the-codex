@@ -33,6 +33,11 @@ if (!function_exists('codex_render_category')) {
 ?>
 <aside class="sidebar">
     <div class="campaign-name"><?= e($campaign['name']) ?></div>
+    <nav class="sidebar-nav">
+        <a href="/campaign/<?= $cid ?>">Overview</a>
+        <a href="/campaign/<?= $cid ?>/dashboard">Dashboard</a>
+        <a href="/campaign/<?= $cid ?>/tags">Tags</a>
+    </nav>
 
     <?php foreach ($tree['roots'] as $cat): ?>
         <?php codex_render_category($cat, $cid, $activeSlug); ?>

@@ -177,6 +177,49 @@ final class Page
         return $row ?: null;
     }
 
+    /**
+     * Previous/next session pages, ordered by their "Session number" field.
+     * Returns ['prev' => ?row, 'next' => ?row].
+     */
+    public static function sessionNeighbors(int $campaignId, int $pageId): array
+    {
+        $sessionCatIds = [];
+        foreach (Db::run('SELECT id FROM categories WHERE campaign_id = ?', [$campaignId])->fetchAll() as $c) {
+            if (Template::isSessionCategory($campaignId, (int) $c['id'])) {
+                $sessionCatIds[] = (int) $c['id'];
+            }
+        }
+        if (!$sessionCatIds) {
+            return ['prev' => null, 'next' => null];
+        }
+
+        $in = implode(',', array_fill(0, count($sessionCatIds), '?'));
+        $rows = Db::run(
+            "SELECT p.id, p.title, p.slug,
+                    CAST(NULLIF(pm.meta_value, '') AS UNSIGNED) AS num
+             FROM pages p
+             LEFT JOIN page_meta pm ON pm.page_id = p.id AND pm.meta_key = 'session-number'
+             WHERE p.campaign_id = ? AND p.category_id IN ($in)
+             ORDER BY num IS NULL, num, p.title",
+            array_merge([$campaignId], $sessionCatIds)
+        )->fetchAll();
+
+        $idx = null;
+        foreach ($rows as $i => $r) {
+            if ((int) $r['id'] === $pageId) {
+                $idx = $i;
+                break;
+            }
+        }
+        if ($idx === null) {
+            return ['prev' => null, 'next' => null];
+        }
+        return [
+            'prev' => $rows[$idx - 1] ?? null,
+            'next' => $rows[$idx + 1] ?? null,
+        ];
+    }
+
     public static function search(int $campaignId, string $query): array
     {
         $like = '%' . $query . '%';
