@@ -57,7 +57,7 @@ $renderOptions = function (int $parent, int $depth) use (&$renderOptions, $byPar
             <fieldset class="template-fields">
                 <legend>Details</legend>
                 <div id="fields-section">
-                    <?= View::capture('partials/fields', ['fields' => $fields, 'values' => $values, 'campaignId' => $campaignId]) ?>
+                    <?= View::capture('partials/fields', ['fields' => $fields, 'values' => $values, 'campaignId' => $campaignId, 'scaffold' => $scaffold ?? '']) ?>
                 </div>
             </fieldset>
 

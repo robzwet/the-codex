@@ -64,6 +64,22 @@
     const fieldsUrl = form.dataset.fieldsUrl;
     const pageId = form.dataset.pageId;
     const cid = fieldsUrl ? fieldsUrl.match(/campaign\/(\d+)/)[1] : null;
+    const isCreate = !pageId;
+
+    // Pre-fill the category's section headings when the body is empty (or still
+    // holds an untouched scaffold), so a new page starts with useful chapters.
+    let lastScaffold = '';
+    function applyScaffold() {
+        if (!isCreate) return;
+        const scaf = document.getElementById('cat-scaffold');
+        const s = scaf ? scaf.innerHTML.trim() : '';
+        const cur = editor.innerHTML.trim();
+        if (cur === '' || cur === '<br>' || cur === lastScaffold) {
+            editor.innerHTML = s;
+            lastScaffold = editor.innerHTML.trim();
+        }
+    }
+    applyScaffold();
 
     if (catSelect && fieldsSection && fieldsUrl) {
         catSelect.addEventListener('change', function () {
@@ -73,6 +89,7 @@
             fieldsSection.innerHTML = '<p class="muted">Loading…</p>';
             fetch(url).then(function (r) { return r.text(); }).then(function (html) {
                 fieldsSection.innerHTML = html;
+                applyScaffold();
             }).catch(function () {
                 fieldsSection.innerHTML = '<p class="muted">Could not load fields.</p>';
             });

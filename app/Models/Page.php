@@ -26,6 +26,32 @@ final class Page
         return $row ?: null;
     }
 
+    /** Resolve a page in a campaign by its title (or slug). */
+    public static function findByTitle(int $campaignId, string $title): ?array
+    {
+        $row = Db::run(
+            'SELECT * FROM pages WHERE campaign_id = ? AND (title = ? OR slug = ?) LIMIT 1',
+            [$campaignId, $title, Slug::make($title)]
+        )->fetch();
+        return $row ?: null;
+    }
+
+    /** Titles of pages in the given categories — for link-field pickers. */
+    public static function titlesInCategories(int $campaignId, array $catIds): array
+    {
+        if (!$catIds) {
+            return [];
+        }
+        $in = implode(',', array_fill(0, count($catIds), '?'));
+        return array_column(
+            Db::run(
+                "SELECT title FROM pages WHERE campaign_id = ? AND category_id IN ($in) ORDER BY title",
+                array_merge([$campaignId], $catIds)
+            )->fetchAll(),
+            'title'
+        );
+    }
+
     /** Lightweight list (id/title/slug/category/kind) used for the tree + search. */
     public static function listForCampaign(int $campaignId): array
     {
@@ -61,6 +87,7 @@ final class Page
         self::saveRevision($id, $title, $html, $userId);
         self::saveMeta($id, $meta);
         WikiLinks::sync($campaignId, $id, $html);
+        WikiLinks::syncFieldLinks($campaignId, $id, $categoryId);
         // Light up any red links that were waiting for a page with this title.
         WikiLinks::resolveInbound($campaignId, $id, $title);
 
@@ -92,6 +119,7 @@ final class Page
         self::saveRevision($id, $title, $html, $userId);
         self::saveMeta($id, $meta);
         WikiLinks::sync($campaignId, $id, $html);
+        WikiLinks::syncFieldLinks($campaignId, $id, $categoryId);
         WikiLinks::resolveInbound($campaignId, $id, $title);
     }
 

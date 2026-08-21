@@ -17,7 +17,7 @@ use App\Lib\Slug;
  */
 final class Template
 {
-    public const TYPES = ['text', 'textarea', 'select', 'suggest', 'image', 'date', 'multi', 'user'];
+    public const TYPES = ['text', 'textarea', 'select', 'suggest', 'image', 'date', 'multi', 'user', 'link'];
 
     /**
      * Default field sets keyed by (lower-cased) category name, seeded on campaign
@@ -41,36 +41,36 @@ final class Template
             ['Age range', 'select', ['Child','Adolescent','Young adult','Adult','Middle-aged','Elderly','Ancient','Unknown']],
             ['Status', 'select', ['Alive','Dead','Undead','Missing','Unknown']],
             ['Occupation', 'text'],
-            ['Location', 'suggest'],
-            ['Faction', 'suggest'],
+            ['Location', 'link', ['Places']],
+            ['Faction', 'link', ['Organizations']],
         ],
         'quests' => [
-            ['Quest giver', 'suggest'],
+            ['Quest giver', 'link', ['NPCs']],
             ['Reward', 'text'],
             ['Status', 'select', ['Active','Open thread','Completed']],
-            ['Started (session)', 'text'],
-            ['Completed (session)', 'text'],
+            ['Started (session)', 'link', ['Sessions']],
+            ['Completed (session)', 'link', ['Sessions']],
         ],
         'organizations' => [
             ['Image', 'image'],
             ['Type', 'suggest', ['Guild','Cult','Noble house','Order','Criminal','Military','Merchant']],
-            ['Leader', 'text'],
-            ['Headquarters', 'suggest'],
+            ['Leader', 'link', ['NPCs']],
+            ['Headquarters', 'link', ['Places']],
             ['Status', 'select', ['Active','Disbanded','Hidden','Unknown']],
             ['Goal', 'textarea'],
         ],
         'places' => [
             ['Image', 'image'],
             ['Type', 'suggest', ['City','Town','Village','Castle','Fort','Dungeon','Ruin','Forest','Cave','Temple']],
-            ['Region', 'suggest'],
+            ['Region', 'link', ['Places']],
             ['Population', 'text'],
-            ['Ruler', 'text'],
+            ['Ruler', 'link', ['NPCs']],
             ['Status', 'select', ['Thriving','Struggling','Abandoned','Destroyed','Unknown']],
         ],
         'points of interest' => [
             ['Image', 'image'],
             ['Type', 'suggest', ['Landmark','Shop','Tavern','Shrine','Monument','Natural','Other']],
-            ['Region', 'suggest'],
+            ['Region', 'link', ['Places']],
             ['Notable for', 'textarea'],
         ],
         'items' => [
@@ -78,14 +78,31 @@ final class Template
             ['Type', 'suggest', ['Weapon','Armor','Potion','Scroll','Ring','Wand','Rod','Staff','Wondrous item']],
             ['Rarity', 'select', ['Common','Uncommon','Rare','Very rare','Legendary','Artifact']],
             ['Attunement', 'select', ['No','Yes']],
-            ['Owner', 'suggest'],
+            ['Owner', 'link', ['Party']],
             ['Value', 'text'],
         ],
         'sessions' => [
+            ['Session number', 'text'],
             ['Played on', 'date'],
+            ['Note-taker', 'user'],
             ['Present', 'multi'],
             ['Recap', 'text'],
         ],
+    ];
+
+    /**
+     * Default body scaffolds (section headings) pre-filled into a new page's
+     * editor, keyed by category name. Dutch, matching the user's vault style.
+     */
+    private const SCAFFOLDS = [
+        'party' => "<h2>Achtergrond</h2><p></p><h2>Spells &amp; trucs</h2><p></p><h2>Magische items</h2><p></p><h2>Memorabel</h2><p></p>",
+        'npcs' => "<h2>Wie is het</h2><p></p><h2>Waar ontmoet</h2><p></p><h2>Wat die weet / wil</h2><p></p><h2>Storyline</h2><h3>Ontmoeting</h3><p></p><h3>Gesprekken</h3><p></p><h3>Gebeurtenissen</h3><p></p>",
+        'organizations' => "<h2>Wie zijn ze</h2><p></p><h2>Doel</h2><p></p><h2>Leden</h2><p></p><h2>Geschiedenis met de groep</h2><p></p>",
+        'places' => "<h2>Beschrijving</h2><p></p><h2>Wie je hier vindt</h2><p></p><h2>Wat er gebeurd is</h2><p></p>",
+        'points of interest' => "<h2>Beschrijving</h2><p></p><h2>Wat er gebeurd is</h2><p></p>",
+        'quests' => "<h2>De opdracht</h2><p></p><h2>Voortgang</h2><p></p><h2>Nog te doen</h2><p></p>",
+        'items' => "<h2>Beschrijving</h2><p></p><h2>Herkomst</h2><p></p><h2>Eigenschappen</h2><p></p>",
+        'sessions' => "<h2>Verslag</h2><p></p><h2>Wie &amp; wat</h2><p></p><h2>Buit</h2><p></p>",
     ];
 
     /** Resolve the fields shown for a page in the given category (with inheritance). */
@@ -101,6 +118,24 @@ final class Template
             $categoryId = $parent && $parent['parent_id'] !== null ? (int) $parent['parent_id'] : null;
         }
         return [];
+    }
+
+    /** Default body scaffold (section headings) for a category, with inheritance. */
+    public static function scaffold(int $campaignId, ?int $categoryId): string
+    {
+        $guard = 0;
+        while ($categoryId !== null && $guard++ < 10) {
+            $row = Db::run('SELECT name, parent_id FROM categories WHERE id = ?', [$categoryId])->fetch();
+            if (!$row) {
+                break;
+            }
+            $key = mb_strtolower(trim($row['name']));
+            if (isset(self::SCAFFOLDS[$key])) {
+                return self::SCAFFOLDS[$key];
+            }
+            $categoryId = $row['parent_id'] !== null ? (int) $row['parent_id'] : null;
+        }
+        return '';
     }
 
     /** Fields defined directly on a category (no inheritance) — for the editor. */

@@ -52,7 +52,15 @@ final class PageController
                 $val = User::name((int) $val) ?? $val;
                 $type = 'text';
             }
-            $display[] = ['label' => $f['label'], 'type' => $type, 'value' => $val];
+            $row = ['label' => $f['label'], 'type' => $type, 'value' => $val];
+            if ($type === 'link') {
+                $target = Page::findByTitle($cid, $val);
+                $row['exists'] = (bool) $target;
+                $row['href'] = $target
+                    ? '/campaign/' . $cid . '/page/' . rawurlencode($target['slug'])
+                    : '/campaign/' . $cid . '/new?title=' . rawurlencode($val);
+            }
+            $display[] = $row;
             $used[$f['field_key']] = true;
         }
         $leftover = [];
@@ -244,6 +252,7 @@ final class PageController
             'fields'     => Template::fieldsFor($cid, $categoryId),
             'values'     => $values,
             'campaignId' => $cid,
+            'scaffold'   => Template::scaffold($cid, $categoryId),
             'tags'       => $tags,
             'allTags'    => array_column(Tag::allForCampaign($cid), 'tag'),
         ], 'app_layout');

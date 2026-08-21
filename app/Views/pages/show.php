@@ -62,6 +62,8 @@ foreach ($display as $d) {
                         <span class="k"><?= e($r['label']) ?>:</span>
                         <?php if ($r['type'] === 'multi'): ?>
                             <?= e(implode(', ', array_map('trim', explode(',', $r['value'])))) ?>
+                        <?php elseif ($r['type'] === 'link'): ?>
+                            <a class="wikilink<?= empty($r['exists']) ? ' wikilink--new' : '' ?>" href="<?= e($r['href']) ?>"><?= e($r['value']) ?></a>
                         <?php else: ?>
                             <?= e($r['value']) ?>
                         <?php endif; ?>

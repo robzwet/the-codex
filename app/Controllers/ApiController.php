@@ -61,6 +61,7 @@ final class ApiController
             'fields'     => Template::fieldsFor($cid, $categoryId),
             'values'     => $values,
             'campaignId' => $cid,
+            'scaffold'   => Template::scaffold($cid, $categoryId),
         ]);
     }
 }

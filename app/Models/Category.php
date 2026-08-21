@@ -60,6 +60,36 @@ final class Category
         Db::run('DELETE FROM categories WHERE id = ? AND campaign_id = ?', [$id, $campaignId]);
     }
 
+    /** A category (matched by name) plus all its descendant category ids. */
+    public static function idsByName(int $campaignId, string $name): array
+    {
+        $cats = Db::run('SELECT id, name, parent_id FROM categories WHERE campaign_id = ?', [$campaignId])->fetchAll();
+        $root = null;
+        foreach ($cats as $c) {
+            if (mb_strtolower(trim($c['name'])) === mb_strtolower(trim($name))) {
+                $root = (int) $c['id'];
+                break;
+            }
+        }
+        if ($root === null) {
+            return [];
+        }
+        $childrenOf = [];
+        foreach ($cats as $c) {
+            $childrenOf[(int) ($c['parent_id'] ?? 0)][] = (int) $c['id'];
+        }
+        $ids = [$root];
+        $stack = [$root];
+        while ($stack) {
+            $x = array_pop($stack);
+            foreach ($childrenOf[$x] ?? [] as $child) {
+                $ids[] = $child;
+                $stack[] = $child;
+            }
+        }
+        return array_values(array_unique($ids));
+    }
+
     /** Flat list for a campaign, ordered for tree building. */
     public static function forCampaign(int $campaignId): array
     {

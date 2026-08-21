@@ -12,6 +12,8 @@ $typeHelp = [
     'image'    => 'Image upload',
     'date'     => 'Date picker',
     'multi'    => 'Multiple values (comma-separated)',
+    'user'     => 'Pick a campaign member (a player)',
+    'link'     => 'Pick an existing page — put the target category in Options (e.g. NPCs)',
 ];
 ?>
 <div class="layout">
