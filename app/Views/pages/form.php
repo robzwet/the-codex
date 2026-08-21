@@ -79,8 +79,11 @@ $renderOptions = function (int $parent, int $depth) use (&$renderOptions, $byPar
                 <?php foreach (($sections ?? []) as $sec): ?>
                     <details class="section-edit">
                         <summary>
-                            <input type="text" class="section-title-input" value="<?= e($sec['title']) ?>" placeholder="Section title">
-                            <button type="button" class="section-remove" title="Remove section">✕</button>
+                            <div class="section-summary">
+                                <span class="section-arrow" aria-hidden="true"></span>
+                                <input type="text" class="section-title-input" value="<?= e($sec['title']) ?>" placeholder="Section title">
+                                <button type="button" class="section-remove" title="Remove section">✕</button>
+                            </div>
                         </summary>
                         <div class="editor section-editor" contenteditable="true" data-placeholder="Write here…"><?= $sec['html'] ?? '' ?></div>
                     </details>
@@ -91,8 +94,11 @@ $renderOptions = function (int $parent, int $depth) use (&$renderOptions, $byPar
             <template id="section-row-template">
                 <details class="section-edit" open>
                     <summary>
-                        <input type="text" class="section-title-input" value="" placeholder="Section title">
-                        <button type="button" class="section-remove" title="Remove section">✕</button>
+                        <div class="section-summary">
+                            <span class="section-arrow" aria-hidden="true"></span>
+                            <input type="text" class="section-title-input" value="" placeholder="Section title">
+                            <button type="button" class="section-remove" title="Remove section">✕</button>
+                        </div>
                     </summary>
                     <div class="editor section-editor" contenteditable="true" data-placeholder="Write here…"></div>
                 </details>
