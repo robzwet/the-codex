@@ -190,15 +190,36 @@ final class Template
     /** Seed a category's default field set if it currently has none. Returns true if seeded. */
     public static function seedForCategory(int $campaignId, int $categoryId, string $categoryName): bool
     {
-        $key = mb_strtolower(trim($categoryName));
-        if (!isset(self::DEFAULTS[$key])) {
+        if (!self::hasDefaults($categoryName)) {
             return false;
         }
         if (self::rawFields($categoryId)) {
             return false; // don't clobber existing fields
         }
+        self::insertDefaults($campaignId, $categoryId, $categoryName);
+        return true;
+    }
+
+    /** Force a category's fields back to the defaults, replacing any existing ones. */
+    public static function forceSeedForCategory(int $campaignId, int $categoryId, string $categoryName): bool
+    {
+        if (!self::hasDefaults($categoryName)) {
+            return false;
+        }
+        Db::run('DELETE FROM category_fields WHERE category_id = ? AND campaign_id = ?', [$categoryId, $campaignId]);
+        self::insertDefaults($campaignId, $categoryId, $categoryName);
+        return true;
+    }
+
+    public static function hasDefaults(string $categoryName): bool
+    {
+        return isset(self::DEFAULTS[mb_strtolower(trim($categoryName))]);
+    }
+
+    private static function insertDefaults(int $campaignId, int $categoryId, string $categoryName): void
+    {
         $order = 0;
-        foreach (self::DEFAULTS[$key] as $def) {
+        foreach (self::DEFAULTS[mb_strtolower(trim($categoryName))] as $def) {
             [$label, $type] = $def;
             $options = $def[2] ?? [];
             Db::run(
@@ -207,7 +228,6 @@ final class Template
                 [$campaignId, $categoryId, $label, Slug::make($label), $type, $options ? json_encode($options) : null, $order++]
             );
         }
-        return true;
     }
 
     /** Seed defaults for every matching category in a campaign (used at creation + on demand). */

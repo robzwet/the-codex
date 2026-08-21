@@ -54,6 +54,22 @@ final class FieldController
         redirect('/campaign/' . $cid . '/category/' . (int) $category['id'] . '/fields');
     }
 
+    /** Force this category's fields back to the built-in defaults (overwrites). */
+    public static function reset(array $params): void
+    {
+        $campaign = Guard::campaign($params['id']);
+        Csrf::check();
+        $cid = (int) $campaign['id'];
+        $category = self::category($cid, (int) $params['cid']);
+
+        if (Template::forceSeedForCategory($cid, (int) $category['id'], $category['name'])) {
+            Flash::set('success', 'Fields reset to defaults for “' . $category['name'] . '”.');
+        } else {
+            Flash::set('error', 'No built-in defaults exist for “' . $category['name'] . '”.');
+        }
+        redirect('/campaign/' . $cid . '/category/' . (int) $category['id'] . '/fields');
+    }
+
     public static function loadDefaults(array $params): void
     {
         $campaign = Guard::campaign($params['id']);

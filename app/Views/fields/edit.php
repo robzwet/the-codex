@@ -31,6 +31,13 @@ $typeHelp = [
                 <?= Csrf::field() ?>
                 <button class="btn" type="submit">✨ Load default fields for “<?= e($category['name']) ?>”</button>
             </form>
+        <?php elseif (\App\Models\Template::hasDefaults($category['name'])): ?>
+            <form method="post" action="/campaign/<?= $cid ?>/category/<?= (int) $category['id'] ?>/fields/reset"
+                  onsubmit="return confirm('Reset these fields to the built-in defaults? The current field definitions will be replaced.');"
+                  style="margin-bottom:16px;">
+                <?= Csrf::field() ?>
+                <button class="btn btn-sm" type="submit">↺ Reset to defaults</button>
+            </form>
         <?php endif; ?>
 
         <form method="post" action="/campaign/<?= $cid ?>/category/<?= (int) $category['id'] ?>/fields" id="fields-editor">

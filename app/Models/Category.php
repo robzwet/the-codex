@@ -37,6 +37,32 @@ final class Category
         }
     }
 
+    /** Add any missing default categories (by name) to an existing campaign. Returns count added. */
+    public static function ensureDefaults(int $campaignId): int
+    {
+        $existing = [];
+        foreach (self::forCampaign($campaignId) as $c) {
+            $existing[mb_strtolower(trim($c['name']))] = (int) $c['id'];
+        }
+        $added = 0;
+        $order = 1000;
+        foreach (self::DEFAULTS as $cat) {
+            $key = mb_strtolower($cat['name']);
+            if (!isset($existing[$key])) {
+                $existing[$key] = self::create($campaignId, $cat['name'], null, $cat['icon'], $order++);
+                $added++;
+            }
+            foreach ($cat['children'] ?? [] as $childName) {
+                if (!isset($existing[mb_strtolower($childName)])) {
+                    self::create($campaignId, $childName, $existing[$key], null, 0);
+                    $existing[mb_strtolower($childName)] = 1;
+                    $added++;
+                }
+            }
+        }
+        return $added;
+    }
+
     public static function create(int $campaignId, string $name, ?int $parentId, ?string $icon, int $sortOrder = 0): int
     {
         Db::run(

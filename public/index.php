@@ -46,6 +46,7 @@ $router->post('/campaign/{id}/categories/{cid}/delete', [CategoryController::cla
 $router->get('/campaign/{id}/category/{cid}/fields', [FieldController::class, 'edit']);
 $router->post('/campaign/{id}/category/{cid}/fields', [FieldController::class, 'save']);
 $router->post('/campaign/{id}/category/{cid}/fields/defaults', [FieldController::class, 'loadDefaults']);
+$router->post('/campaign/{id}/category/{cid}/fields/reset', [FieldController::class, 'reset']);
 
 // --- Pages ---
 $router->get('/campaign/{id}/new', [PageController::class, 'createForm']);
