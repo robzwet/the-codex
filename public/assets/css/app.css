@@ -248,6 +248,13 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
 .infobox-image img { max-width: 100%; border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 10px; }
 .byline { text-align: center; font-size: 13px; margin: -14px 0 20px; }
 
+/* When a page has an image, float its infobox to the right and let text wrap. */
+.infobox--float { float: right; width: 300px; max-width: 42%; margin: 0 0 16px 24px; }
+.backlinks, .tag-list { clear: both; }
+@media (max-width: 768px) {
+    .infobox--float { float: none; width: auto; max-width: 100%; margin: 0 0 22px; }
+}
+
 /* --- Sidebar nav --- */
 .sidebar-nav { display: flex; gap: 6px; padding: 8px 16px 10px; border-bottom: 1px solid var(--border); margin-bottom: 8px; flex-wrap: wrap; }
 .sidebar-nav a { font-size: 13px; color: var(--text-muted); padding: 3px 8px; border-radius: 5px; }

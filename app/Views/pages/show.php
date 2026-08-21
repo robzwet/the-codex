@@ -52,7 +52,7 @@ foreach ($display as $d) {
         </p>
 
         <?php if ($image || $rows || $leftover): ?>
-            <div class="infobox">
+            <div class="infobox<?= $image ? ' infobox--float' : '' ?>">
                 <div class="infobox-header"><?= $isSession ? 'Session' : 'Details' ?></div>
                 <?php if ($image): ?>
                     <div class="infobox-image"><img src="<?= e($image) ?>" alt="<?= e($page['title']) ?>"></div>
