@@ -158,7 +158,7 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
 .sidebar-add { padding: 10px 16px; }
 
 /* --- Main content --- */
-.main { flex: 1; overflow-y: auto; padding: 30px 44px; max-width: 900px; }
+.main { flex: 0 1 900px; margin: 0 auto; overflow-y: auto; padding: 30px 44px; }
 .page-title { text-align: center; color: var(--red-title); font-variant: small-caps; font-size: 30px; letter-spacing: 1px; margin: 0 0 4px; }
 .page-title-rule { text-align: center; color: var(--gold); margin-bottom: 24px; }
 .page-toolbar { display: flex; gap: 8px; justify-content: flex-end; margin-bottom: 16px; }
