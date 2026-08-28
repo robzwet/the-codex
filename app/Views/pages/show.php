@@ -75,6 +75,27 @@ foreach ($display as $d) {
             </div>
         <?php endif; ?>
 
+        <?php if (!empty($related)): ?>
+            <div class="related">
+                <?php foreach ($related as $g): ?>
+                    <div class="related-group">
+                        <div class="related-head">
+                            <?php if ($g['icon'] !== ''): ?><span class="related-icon"><?= e($g['icon']) ?></span> <?php endif; ?><?= e($g['category']) ?>
+                        </div>
+                        <ul class="related-list">
+                            <?php foreach ($g['items'] as $it): ?>
+                                <li>
+                                    <a href="/campaign/<?= $cid ?>/page/<?= rawurlencode($it['slug']) ?>"><?= e($it['title']) ?></a>
+                                    <?php if (!empty($it['field'])): ?><span class="related-field"><?= e($it['field']) ?></span><?php endif; ?>
+                                    <?php if ($it['info'] !== ''): ?><span class="related-info"><?= e($it['info']) ?></span><?php endif; ?>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+
         <?php if (!empty($sections)): ?>
             <div class="page-sections">
                 <?php foreach ($sections as $sec): ?>
