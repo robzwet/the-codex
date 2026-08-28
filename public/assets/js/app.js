@@ -44,20 +44,37 @@
             e.preventDefault();
             const ed = currentEditor();
             if (!ed) return;
-            ed.focus();
             if (btn.dataset.cmd) {
+                ed.focus();
                 document.execCommand(btn.dataset.cmd, false, null);
             } else if (btn.dataset.block) {
+                ed.focus();
                 document.execCommand('formatBlock', false, btn.dataset.block);
             } else if (btn.hasAttribute('data-wikilink')) {
-                document.execCommand('insertText', false, '[[]]');
+                // No focus() here — focusing collapses the selection we want to wrap.
                 const sel = window.getSelection();
-                if (sel.rangeCount) {
-                    const r = sel.getRangeAt(0);
-                    r.setStart(r.startContainer, r.startOffset - 2);
-                    r.collapse(true);
+                if (!sel || !sel.rangeCount) return;
+                const range = sel.getRangeAt(0);
+                const selectedText = range.toString(); // range.toString works without doc focus
+                if (!range.collapsed && selectedText) {
+                    // Wrap the selection: "word" -> "[[word]]".
+                    const node = document.createTextNode('[[' + selectedText + ']]');
+                    range.deleteContents();
+                    range.insertNode(node);
+                    const after = document.createRange();
+                    after.setStartAfter(node);
+                    after.collapse(true);
                     sel.removeAllRanges();
-                    sel.addRange(r);
+                    sel.addRange(after);
+                } else {
+                    // No selection: insert empty brackets with the caret inside.
+                    const node = document.createTextNode('[[]]');
+                    range.insertNode(node);
+                    const mid = document.createRange();
+                    mid.setStart(node, 2);
+                    mid.collapse(true);
+                    sel.removeAllRanges();
+                    sel.addRange(mid);
                 }
                 ed.dispatchEvent(new Event('input', { bubbles: true }));
             }

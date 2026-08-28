@@ -41,7 +41,7 @@ final class Template
             ['Age range', 'select', ['Child','Adolescent','Young adult','Adult','Middle-aged','Elderly','Ancient','Unknown']],
             ['Status', 'select', ['Alive','Dead','Undead','Missing','Unknown']],
             ['Occupation', 'text'],
-            ['Location', 'link', ['Places']],
+            ['Location', 'link', ['Places', 'Points of Interest']],
             ['Faction', 'link', ['Organizations']],
         ],
         'quests' => [
