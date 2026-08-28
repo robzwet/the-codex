@@ -84,6 +84,7 @@ final class PageController
             'display'   => $display,
             'leftover'  => $leftover,
             'tags'      => Tag::forPage((int) $page['id']),
+            'related'   => Page::incomingReferences($cid, $page),
             'authors'   => Page::authors((int) $page['id']),
             'isSession' => $isSession = Template::isSessionCategory($cid, $page['category_id'] !== null ? (int) $page['category_id'] : null),
             'neighbors' => $isSession ? Page::sessionNeighbors($cid, (int) $page['id']) : ['prev' => null, 'next' => null],

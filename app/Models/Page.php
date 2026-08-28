@@ -212,6 +212,73 @@ final class Page
         return $row ?: ['created_by' => null, 'updated_by' => null, 'created_at' => null, 'updated_at' => null];
     }
 
+    /**
+     * Pages whose `link` fields point at this page (quests given by an NPC, items
+     * owned by a PC, NPCs located in a place, …), grouped by the source's
+     * top-level category, each with a little status info. A per-page mini-dashboard.
+     */
+    public static function incomingReferences(int $campaignId, array $page): array
+    {
+        $rows = Db::run(
+            "SELECT p.id AS src_id, p.title, p.slug, pm.meta_key,
+                    c.name AS cat_name, c.icon AS cat_icon,
+                    pc.name AS parent_name, pc.icon AS parent_icon,
+                    cf.label AS field_label
+             FROM page_meta pm
+             JOIN pages p ON p.id = pm.page_id
+             JOIN category_fields cf ON cf.campaign_id = p.campaign_id AND cf.field_key = pm.meta_key AND cf.type = 'link'
+             LEFT JOIN categories c  ON c.id = p.category_id
+             LEFT JOIN categories pc ON pc.id = c.parent_id
+             WHERE p.campaign_id = ? AND pm.meta_value = ? AND p.id <> ?
+             ORDER BY p.title",
+            [$campaignId, $page['title'], (int) $page['id']]
+        )->fetchAll();
+        if (!$rows) {
+            return [];
+        }
+
+        // A short info line per source page (status / reward / rarity / type).
+        $ids = array_values(array_unique(array_map(fn($r) => (int) $r['src_id'], $rows)));
+        $in = implode(',', array_fill(0, count($ids), '?'));
+        $infoRows = Db::run(
+            "SELECT page_id, meta_key, meta_value FROM page_meta
+             WHERE page_id IN ($in) AND meta_key IN ('status','reward','rarity','type') AND meta_value <> ''",
+            $ids
+        )->fetchAll();
+        $infoByPage = [];
+        foreach ($infoRows as $ir) {
+            $infoByPage[(int) $ir['page_id']][$ir['meta_key']] = $ir['meta_value'];
+        }
+
+        $groups = [];
+        $seen = [];
+        foreach ($rows as $r) {
+            $sid = (int) $r['src_id'];
+            if (isset($seen[$sid])) {
+                continue; // one entry per referencing page
+            }
+            $seen[$sid] = true;
+
+            $top = $r['parent_name'] ?: ($r['cat_name'] ?: 'Related');
+            if (!isset($groups[$top])) {
+                $groups[$top] = ['category' => $top, 'icon' => $r['cat_icon'] ?: ($r['parent_icon'] ?: ''), 'items' => []];
+            }
+            $info = [];
+            foreach (['status', 'reward', 'rarity', 'type'] as $k) {
+                if (!empty($infoByPage[$sid][$k])) {
+                    $info[] = $infoByPage[$sid][$k];
+                }
+            }
+            $groups[$top]['items'][] = [
+                'title' => $r['title'],
+                'slug'  => $r['slug'],
+                'field' => $r['field_label'],
+                'info'  => implode(' · ', $info),
+            ];
+        }
+        return array_values($groups);
+    }
+
     public static function revisions(int $pageId): array
     {
         return Db::run(

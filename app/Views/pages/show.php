@@ -52,7 +52,7 @@ foreach ($display as $d) {
         </p>
 
         <?php if ($image || $rows || $leftover): ?>
-            <div class="infobox<?= $image ? ' infobox--float' : '' ?>">
+            <div class="infobox infobox--float">
                 <div class="infobox-header"><?= $isSession ? 'Session' : 'Details' ?></div>
                 <?php if ($image): ?>
                     <div class="infobox-image"><img src="<?= e($image) ?>" alt="<?= e($page['title']) ?>"></div>
@@ -71,6 +71,27 @@ foreach ($display as $d) {
                 <?php endforeach; ?>
                 <?php foreach ($leftover as $r): ?>
                     <div class="infobox-row"><span class="k"><?= e($r['label']) ?>:</span> <?= e($r['value']) ?></div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+
+        <?php if (!empty($related)): ?>
+            <div class="related">
+                <?php foreach ($related as $g): ?>
+                    <div class="related-group">
+                        <div class="related-head">
+                            <?php if ($g['icon'] !== ''): ?><span class="related-icon"><?= e($g['icon']) ?></span> <?php endif; ?><?= e($g['category']) ?>
+                        </div>
+                        <ul class="related-list">
+                            <?php foreach ($g['items'] as $it): ?>
+                                <li>
+                                    <a href="/campaign/<?= $cid ?>/page/<?= rawurlencode($it['slug']) ?>"><?= e($it['title']) ?></a>
+                                    <?php if (!empty($it['field'])): ?><span class="related-field"><?= e($it['field']) ?></span><?php endif; ?>
+                                    <?php if ($it['info'] !== ''): ?><span class="related-info"><?= e($it['info']) ?></span><?php endif; ?>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
                 <?php endforeach; ?>
             </div>
         <?php endif; ?>
