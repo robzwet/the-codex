@@ -46,6 +46,7 @@ final class Template
         ],
         'quests' => [
             ['Quest giver', 'link', ['NPCs']],
+            ['Quest receiver', 'link', ['NPCs', 'Party']],
             ['Reward', 'text'],
             ['Status', 'select', ['Active','Open thread','Completed']],
             ['Started (session)', 'link', ['Sessions']],
