@@ -43,16 +43,24 @@ final class WikiLinks
             $title = trim($m[1]);
             $label = isset($m[2]) && $m[2] !== '' ? trim($m[2]) : $title;
 
+            // Resolve the page plus its category icon (falling back to the parent
+            // category's icon for sub-categories like Enemies/Friendly).
             $page = Db::run(
-                'SELECT slug FROM pages WHERE campaign_id = ? AND (title = ? OR slug = ?) LIMIT 1',
+                'SELECT p.slug, c.icon AS cat_icon, pc.icon AS parent_icon
+                 FROM pages p
+                 LEFT JOIN categories c  ON c.id = p.category_id
+                 LEFT JOIN categories pc ON pc.id = c.parent_id
+                 WHERE p.campaign_id = ? AND (p.title = ? OR p.slug = ?) LIMIT 1',
                 [$campaignId, $title, Slug::make($title)]
             )->fetch();
 
             $labelEsc = htmlspecialchars($label, ENT_QUOTES);
 
             if ($page) {
+                $icon = $page['cat_icon'] ?: ($page['parent_icon'] ?: '');
+                $iconPrefix = $icon !== '' ? '<span class="wikilink-icon">' . htmlspecialchars($icon, ENT_QUOTES) . '</span>' : '';
                 $href = '/campaign/' . $campaignId . '/page/' . rawurlencode($page['slug']);
-                return '<a class="wikilink" href="' . $href . '">' . $labelEsc . '</a>';
+                return '<a class="wikilink" href="' . $href . '">' . $iconPrefix . $labelEsc . '</a>';
             }
 
             // Red link — offers to create the page with this title.
