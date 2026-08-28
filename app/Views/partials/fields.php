@@ -43,12 +43,17 @@ foreach ($fields as $f):
 
         <?php elseif ($f['type'] === 'link'): ?>
             <?php
-            $targetCat = $f['options'][0] ?? '';
-            $titles = $targetCat ? Page::titlesInCategories($campaignId, Category::idsByName($campaignId, $targetCat)) : [];
+            // A link field may target one or more categories; aggregate their pages.
+            $targetCats = $f['options'] ?: [];
+            $catIds = [];
+            foreach ($targetCats as $tc) {
+                $catIds = array_merge($catIds, Category::idsByName($campaignId, $tc));
+            }
+            $titles = $catIds ? Page::titlesInCategories($campaignId, array_values(array_unique($catIds))) : [];
             ?>
             <input type="text" id="<?= e($id) ?>" name="field[<?= e($key) ?>]" value="<?= e($val) ?>"
                    list="dl_<?= e($id) ?>"
-                   placeholder="<?= $targetCat ? 'Pick an existing ' . e($targetCat) . ' — or type a new name' : 'Pick an existing page' ?>">
+                   placeholder="<?= $targetCats ? 'Pick an existing ' . e(implode(' / ', $targetCats)) . ' — or type a new name' : 'Pick an existing page' ?>">
             <datalist id="dl_<?= e($id) ?>">
                 <?php foreach ($titles as $t): ?><option value="<?= e($t) ?>"></option><?php endforeach; ?>
             </datalist>
